@@ -1,0 +1,4 @@
+# Include potential config or functional files from contrib
+recursive-include uctt/contrib/*
+# remove any stuff we don't want (I find that this doesn't work well)
+prune .git .terraform __pycache__ *.py[ocd]
