@@ -15,8 +15,8 @@ A comprehensive config structure could be:
 ```
 # Import configerus for config generation
 import configerus
-from configerus.contrib.path PLUGIN_ID_CONFIGSOURCE_PATH
-from configerus.contrib.dict PLUGIN_ID_CONFIGSOURCE_DICT
+from configerus.contrib.path PLUGIN_ID_SOURCE_PATH
+from configerus.contrib.dict PLUGIN_ID_SOURCE_DICT
 
 # Import the uctt core
 import uctt
@@ -34,7 +34,7 @@ def config():
     # New config
     config = configerus.new_config()
     # Add ./config path as a config source
-    config.add_source(PLUGIN_ID_CONFIGSOURCE_PATH, 'project_config').set_path(os.path.join(__dir__, 'config'))
+    config.add_source(PLUGIN_ID_SOURCE_PATH, 'project_config').set_path(os.path.join(__dir__, 'config'))
 
     return config
 ```

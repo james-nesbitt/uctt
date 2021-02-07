@@ -4,7 +4,8 @@ import logging
 
 from uctt.client import ClientBase
 
-logger = logging.getLogger("uctt.contrib.kubernetes.client")
+logger = logging.getLogger('uctt.contrib.kubernetes.client')
+
 
 class KubernetesClientPlugin(ClientBase):
     """ MTT Client plugin for Kubernetes
@@ -76,7 +77,8 @@ class KubernetesClientPlugin(ClientBase):
 
         """
         logger.debug("Creating Kuberentes client from config file")
-        self.api_client = kubernetes.config.new_client_from_config(config_file=config_file)
+        self.api_client = kubernetes.config.new_client_from_config(
+            config_file=config_file)
 
     def get_CoreV1Api_client(self):
         """ Get a CoreV1Api client """

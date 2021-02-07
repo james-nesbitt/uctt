@@ -15,6 +15,7 @@ from .client import KubernetesClientPlugin
 
 logger = logging.getLogger('uctt.contrib.kubernetes.workload')
 
+
 class KubernetesSpecFilesWorkloadPlugin(WorkloadBase):
     """ Dummy workload class """
 
@@ -22,11 +23,12 @@ class KubernetesSpecFilesWorkloadPlugin(WorkloadBase):
         """ include a list of kubernetes yaml files to be used in this workload """
         self.files = files
 
-    def apply(client:KubernetesClientPlugin):
+    def apply(client: KubernetesClientPlugin):
         """ exec the workload on a client """
         for file in self.files:
             kubernetes_utils.utils.create_from_yaml(client, file)
 
-    def destroy(client:KubernetesClientPlugin):
+    def destroy(client: KubernetesClientPlugin):
         """ Remove any resources created in apply """
-        logger.warn('KubernetesSpecFilesWorkloadPlugin.destroy() not written yet')
+        logger.warn(
+            "KubernetesSpecFilesWorkloadPlugin.destroy() not written yet")

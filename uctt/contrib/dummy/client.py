@@ -12,6 +12,7 @@ from uctt.client import ClientBase
 
 logger = logging.getLogger('uctt.contrib.dummy.client')
 
+
 class DummyClientPlugin(ClientBase):
     """ Dummy client class
 
@@ -32,7 +33,7 @@ class DummyClientPlugin(ClientBase):
 
         self.outputs = {}
 
-    def arguments(self, outputs:Dict[str, Any]={}):
+    def arguments(self, outputs: Dict[str, Any] = {}):
         """ Take workload arguments
 
         Parameters:
@@ -45,11 +46,12 @@ class DummyClientPlugin(ClientBase):
             should be requested when working on a provisioner
 
         """
-        self.outputs = uctt.new_outputs_from_dict(outputs, self.config)
+        self.outputs = uctt.new_outputs_from_dict(
+            config=self.config, output_list=outputs)
 
-    def get_output(self, instance_id:str):
+    def get_output(self, instance_id: str):
         """ Retrieve a dummy output """
         logger.info("{}:execute: get_output()".format(self.instance_id))
         if not self.outputs:
-            raise ValueError('No outputs have been added to the dummy client')
+            raise ValueError("No outputs have been added to the dummy client")
         return self.outputs.get_plugin(instance_id=instance_id)

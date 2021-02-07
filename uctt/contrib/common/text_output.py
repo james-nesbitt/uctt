@@ -1,7 +1,8 @@
+from uctt.output import OutputBase
 import logging
 
-logger = logging.getLogger("uctt.contrib.common.output.text")
-from uctt.output import OutputBase
+logger = logging.getLogger('uctt.contrib.common.output.text')
+
 
 class TextOutputPlugin(OutputBase):
     """ MTT Output plugin a text output type
