@@ -7,6 +7,8 @@ Shared tooling and functionality
 from typing import Dict, Any
 
 # @see https://stackoverflow.com/questions/20656135/python-deep-merge-dictionary-data
+
+
 def tree_merge(source: Dict[str, Any], destination: Dict[str, Any]):
     """
     Deep merge source into destination
@@ -17,8 +19,10 @@ def tree_merge(source: Dict[str, Any], destination: Dict[str, Any]):
     True
     """
 
-    assert isinstance(source, dict), "Can't merge a non-dict Source: {}".format(source)
-    assert isinstance(destination, dict), "Can't merge a non-dict Destination: {}".format(destination)
+    assert isinstance(
+        source, dict), "Can't merge a non-dict Source: {}".format(source)
+    assert isinstance(
+        destination, dict), "Can't merge a non-dict Destination: {}".format(destination)
 
     for key, value in source.items():
         if isinstance(value, dict):
@@ -30,19 +34,23 @@ def tree_merge(source: Dict[str, Any], destination: Dict[str, Any]):
 
     return destination
 
+
 def tree_get(node: Dict, key: str):
     """ if key is a "." (dot) delimited path down the Dict as a tree, return the
     matching value, or throw a KeyError if it isn't found """
 
-    assert key != "", "Must pass a non-empty string key in dot notation"
+    assert key != '', "Must pass a non-empty string key in dot notation"
 
     if not node:
-        raise ValueError("There was no data in the config so no key match could be made")
+        raise ValueError(
+            "There was no data in the config so no key match could be made")
 
     for step in key.split('.'):
         if step in node:
             node = node[step]
         else:
-            raise KeyError("Key {} not found in loaded config data. '{}'' was not found".format(key, step))
+            raise KeyError(
+                "Key {} not found in loaded config data. '{}'' was not found".format(
+                    key, step))
 
     return node

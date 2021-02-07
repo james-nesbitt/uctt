@@ -1,11 +1,10 @@
+from uctt.output import OutputBase
+from configerus.contrib.dict import PLUGIN_ID_SOURCE_DICT
 import logging
 from typing import Dict
 
-logger = logging.getLogger("uctt.contrib.common.output.dict")
+logger = logging.getLogger('uctt.contrib.common.output.dict')
 
-from configerus.contrib.dict import PLUGIN_ID_CONFIGSOURCE_DICT
-
-from uctt.output import OutputBase
 
 class DictOutputPlugin(OutputBase):
     """ MTT Output plugin a Dict output type
@@ -15,7 +14,7 @@ class DictOutputPlugin(OutputBase):
 
     """
 
-    def arguments(self, data:Dict, validator:str=''):
+    def arguments(self, data: Dict, validator: str = '.'):
         """ Assign data
 
         This turns the data into a dict configerus source and adds it to the
@@ -35,12 +34,13 @@ class DictOutputPlugin(OutputBase):
 
         """
         self.config_instance_id = 'dict-output-{}'.format(self.instance_id)
-        self.config.add_source(PLUGIN_ID_CONFIGSOURCE_DICT, instance_id).set_data({
+        self.config.add_source(PLUGIN_ID_SOURCE_DICT, self.config_instance_id).set_data({
             self.config_instance_id: data
         })
-        self.loaded_config = self.config.load(self.config_instance_id, validator=validator)
+        self.loaded_config = self.config.load(
+            self.config_instance_id, validator=validator)
 
-    def get_output(self, key:str='', validator:str=''):
+    def get_output(self, key: str = '', validator: str = ''):
         """ retrieve an output
 
         Because we treated that data as a high-priority configerus source with

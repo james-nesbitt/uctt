@@ -1,12 +1,11 @@
 
+from uctt.client import ClientBase
+from docker import DockerClient
 import logging
 import os
 
-logger = logging.getLogger("uctt.contrib.docker.client")
+logger = logging.getLogger('uctt.contrib.docker.client')
 
-from docker import DockerClient
-
-from uctt.client import ClientBase
 
 class DockerClientPlugin(ClientBase, DockerClient):
     """ MTT Client plugin for docker
@@ -15,7 +14,8 @@ class DockerClientPlugin(ClientBase, DockerClient):
 
     """
 
-    def args(self, host:str, cert_path:str, tls_verify:bool=True, compose_tls_version:str='TLSv1_2'):
+    def args(self, host: str, cert_path: str, tls_verify: bool = True,
+             compose_tls_version: str = 'TLSv1_2'):
         """ Build the DockerClient
 
         In order to decorate this existing class as a DockerClient, without using the
@@ -41,13 +41,14 @@ class DockerClientPlugin(ClientBase, DockerClient):
             the Docker client use for docker compose.
 
         """
-        logger.debug("Configuring docker client with args for host:{}".format(host))
+        logger.debug(
+            "Configuring docker client with args for host:{}".format(host))
 
         env = os.environ.copy()
-        env["DOCKER_HOST"] = host
-        env["DOCKER_CERT_PATH"] = cert_path
-        env["DOCKER_TLS_VERIFY"] = "1" if tls_verify else "0"
-        env["COMPOSE_TLS_VERSION"] = compose_tls_version
+        env['DOCKER_HOST'] = host
+        env['DOCKER_CERT_PATH'] = cert_path
+        env['DOCKER_TLS_VERIFY'] = '1' if tls_verify else '0'
+        env['COMPOSE_TLS_VERSION'] = compose_tls_version
 
         throwaway = DockerClient.from_env(environment=env)
         self.api = throwaway.api
