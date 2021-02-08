@@ -23,7 +23,8 @@ UCTT_DUMMY_PROVISIONER_CONFIG_KEY_CLIENTS = 'clients'
 class DummyProvisionerPlugin(ProvisionerBase):
     """ Dummy provisioner class """
 
-    def prepare(self, label: str = UCTT_DUMMY_PROVISIONER_CONFIG_LABEL):
+    def prepare(
+            self, label: str = UCTT_DUMMY_PROVISIONER_CONFIG_LABEL, base: str = ''):
         """
 
         Interpret provided config and configure the object with outputs and
@@ -32,14 +33,21 @@ class DummyProvisionerPlugin(ProvisionerBase):
         """
         logger.info("{}:execute: prepare()".format(self.instance_id))
 
+        clients_key = '{}.{}'.format(
+            base,
+            UCTT_DUMMY_PROVISIONER_CONFIG_KEY_CLIENTS) if base else UCTT_DUMMY_PROVISIONER_CONFIG_KEY_CLIENTS
+        outputs_key = '{}.{}'.format(
+            base,
+            UCTT_DUMMY_PROVISIONER_CONFIG_KEY_OUTPUTS) if base else UCTT_DUMMY_PROVISIONER_CONFIG_KEY_OUTPUTS
+
         self.clients = uctt.new_clients_from_config(
             config=self.config,
-            label=UCTT_DUMMY_PROVISIONER_CONFIG_LABEL,
-            key=UCTT_DUMMY_PROVISIONER_CONFIG_KEY_CLIENTS)
+            label=label,
+            key=clients_key)
         self.outputs = uctt.new_outputs_from_config(
             config=self.config,
-            label=UCTT_DUMMY_PROVISIONER_CONFIG_LABEL,
-            key=UCTT_DUMMY_PROVISIONER_CONFIG_KEY_OUTPUTS)
+            label=label,
+            key=outputs_key)
 
     def apply(self):
         """ pretend to bring a cluster up """

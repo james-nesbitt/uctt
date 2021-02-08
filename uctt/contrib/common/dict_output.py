@@ -1,7 +1,9 @@
-from uctt.output import OutputBase
-from configerus.contrib.dict import PLUGIN_ID_SOURCE_DICT
 import logging
 from typing import Dict
+
+from configerus.contrib.dict import PLUGIN_ID_SOURCE_DICT
+from configerus.loaded import LOADED_KEY_ROOT
+from uctt.output import OutputBase
 
 logger = logging.getLogger('uctt.contrib.common.output.dict')
 
@@ -14,7 +16,7 @@ class DictOutputPlugin(OutputBase):
 
     """
 
-    def arguments(self, data: Dict, validator: str = '.'):
+    def arguments(self, data: Dict, validator: str = ''):
         """ Assign data
 
         This turns the data into a dict configerus source and adds it to the
@@ -40,7 +42,7 @@ class DictOutputPlugin(OutputBase):
         self.loaded_config = self.config.load(
             self.config_instance_id, validator=validator)
 
-    def get_output(self, key: str = '', validator: str = ''):
+    def get_output(self, key: str = LOADED_KEY_ROOT, validator: str = ''):
         """ retrieve an output
 
         Because we treated that data as a high-priority configerus source with

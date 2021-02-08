@@ -160,6 +160,8 @@ def new_provisioner_from_config(config: Config,
     the module that contains the factory method with a decorator.
 
     """
+    logger.debug("Creating provisioner: [{}]:[{}][{}] : {}".format(
+        label, key, instance_id, config.load(label).get(key)))
     return new_plugin_from_config(
         config=config, type=Type.PROVISIONER, label=label, key=key)
 

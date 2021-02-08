@@ -19,8 +19,21 @@ UCTT_PLUGIN_TYPE_PROVISIONER = Type.PROVISIONER
 class ProvisionerBase(UCTTPlugin):
     "Base Provisioner plugin class"
 
-    def prepare(self):
-        """ Prepare the provisioner to apply resources """
+    def prepare(self, label: str = '', base: str = ''):
+        """ Prepare the provisioner to apply resources
+
+        Initial Provisioner plugin is expected to be of very low cost until
+        prepare() is executed.  At this point the plugin should load any config
+        and perform any validations needed.
+        The plugin should not create any resources but it is understood that
+        there may be a cost of preparation.
+
+        Provisioners are expected to load a lot of config to self-program.
+        Because of this, they allow passing of a configerus label for .load()
+        and a base for .get() in case there is an alterante config source
+        desired.
+
+        """
         pass
 
     def apply(self):

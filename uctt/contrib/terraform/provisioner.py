@@ -70,7 +70,8 @@ class TerraformProvisionerPlugin(ProvisionerBase):
 
     """
 
-    def prepare(self, label: str = TERRAFORM_PROVISIONER_CONFIG_LABEL):
+    def prepare(self, label: str = TERRAFORM_PROVISIONER_CONFIG_LABEL,
+                base: str = ''):
         """
 
         Interpret provided config and configure the object with all of the needed
@@ -81,15 +82,21 @@ class TerraformProvisionerPlugin(ProvisionerBase):
         logger.info("Preparing Terraform setting")
 
         self.terraform_config_label = label
+        self.terraform_config_base = base
         self.terraform_config = self.config.load(self.terraform_config_label)
         """ get a configerus LoadedConfig for the terraform label """
 
         self.working_dir = self.terraform_config.get(
-            TERRAFORM_PROVISIONER_CONFIG_PLAN_PATH_KEY)
+            TERRAFORM_PROVISIONER_CONFIG_PLAN_PATH_KEY,
+            base=self.terraform_config_base)
         """ all subprocess commands for terraform will be run in this path """
+        if not self.working_dir:
+            raise ValueError(
+                "Plugin config did not give us a working/plan path: {}".format(self.terraform_config.data))
 
         state_path = self.terraform_config.get(
             TERRAFORM_PROVISIONER_CONFIG_STATE_PATH_KEY,
+            base=base,
             exception_if_missing=False)
         """ terraform state path """
         if not state_path:
@@ -98,13 +105,15 @@ class TerraformProvisionerPlugin(ProvisionerBase):
                 TERRAFORM_PROVISIONER_DEFAULT_STATE_SUBPATH)
 
         self.vars = self.terraform_config.get(
-            TERRAFORM_PROVISIONER_CONFIG_VARS_KEY)
+            TERRAFORM_PROVISIONER_CONFIG_VARS_KEY,
+            base=self.terraform_config_base)
         """ List of vars to pass to terraform.  Will be written to a file """
         if not self.vars:
             self.vars = {}
 
         vars_path = self.terraform_config.get(
             TERRAFORM_PROVISIONER_CONFIG_VARS_PATH_KEY,
+            base=self.terraform_config_base,
             exception_if_missing=False)
         """ vars file containing vars which will be written before running terraform """
         if not vars_path:
@@ -158,10 +167,13 @@ class TerraformProvisionerPlugin(ProvisionerBase):
 
         """
         try:
+            outputs_key = '{}.{}'.format(
+                self.terraform_config_base,
+                TERRAFORM_PROVISIONER_CONFIG_OUTPUTS_KEY) if self.terraform_config_base else TERRAFORM_PROVISIONER_CONFIG_OUTPUTS_KEY
             outputs = uctt.new_outputs_from_config(
                 self.config,
                 self.terraform_config_label,
-                TERRAFORM_PROVISIONER_CONFIG_OUTPUTS_KEY)
+                outputs_key)
         except BaseException:
             outputs = uctt.plugin.PluginInstances()
 

@@ -68,7 +68,6 @@ def new_plugins_from_config(
         config=config, type=type, plugin_list=plugin_list)
 
 
-
 def new_plugins_from_dict(config: Config, type: Type,
                           plugin_list: Dict[str, Dict[str, Any]]) -> PluginInstances:
     """ Create a set of plugins from Dict information
@@ -187,12 +186,17 @@ def new_plugin_from_config(config: Config, type: Type,
     the module that contains the factory method with a decorator.
 
     """
+    logger.debug('Create plugin [{}][{}] : {}'.format(
+        type, instance_id, config.load(label).get(key)))
+
     config_plugin = config.load(label)
     """ loaded configuration for the plugin """
 
     plugin_id = config_plugin.get(UCTT_PLUGIN_CONFIG_KEY_PLUGINID)
     if not plugin_id:
-        raise ValueError('Could not find a plugin_id when trying to create a plugin')
+        raise ValueError(
+            "Could not find a plugin_id when trying to create a plugin:[{}][{}][{}] : {}".format(type, label, key, config_plugin.get(key)))
+
     # if no instance_id was passed, try to load one or just make one up
     if not instance_id:
         instance_id = config_plugin.get(UCTT_PLUGIN_CONFIG_KEY_INSTANCEID)
@@ -222,6 +226,7 @@ def new_plugin_from_config(config: Config, type: Type,
         plugin.arguments(**plugin_args)
 
     return plugin
+
 
 def new_plugin_from_dict(config: Config, type: Type,
                          plugin_dict: Dict[str, Any], instance_id: str = '') -> UCTTPlugin:
@@ -267,7 +272,8 @@ def new_plugin_from_dict(config: Config, type: Type,
         PLUGIN_ID_SOURCE_DICT, ).set_data({
             dict_id: plugin_dict
         })
-    return new_plugin_from_config(config, type, dict_id, LOADED_KEY_ROOT, instance_id)
+    return new_plugin_from_config(
+        config, type, dict_id, LOADED_KEY_ROOT, instance_id)
 
 
 def new_plugin(config: Config, type: Type, plugin_id: str,
