@@ -5,6 +5,22 @@ from configerus.config import Config
 
 logger = logging.getLogger('uctt.plugin')
 
+UCTT_PLUGIN_CONFIG_KEY_PLUGINID = 'plugin_id'
+""" configerus .get() key for plugin_id """
+UCTT_PLUGIN_CONFIG_KEY_INSTANCEID = 'instance_id'
+""" configerus .get() key for plugin_id """
+UCTT_PLUGIN_CONFIG_KEY_TYPE = 'type'
+""" configerus .get() key for plugin type """
+UCTT_PLUGIN_CONFIG_KEY_ARGUMENTS = 'arguments'
+""" configerus .get() key for plugin arguments """
+
+UCTT_PLUGIN_CONFIG_KEY_PRIORITY = 'priority'
+""" will use this Dict key assign an instance a priority when it is created. """
+UCTT_PLUGIN_CONFIG_KEY_CONFIG = 'config'
+""" will use this Dict key as additional config """
+UCTT_PLUGIN_CONFIG_KEY_VALIDATORS = 'validators'
+""" will use this Dict key from the output config to decide what validators to apply to the plugin """
+
 
 class UCTTPlugin():
     """ Base MTT Plugin which all plugins can extend """
@@ -21,6 +37,15 @@ class UCTTPlugin():
         """
         self.config = config
         self.instance_id = instance_id
+
+
+class UCCTArgumentsPlugin(UCTTPlugin):
+    """ Base class for output plugins that receives arguments """
+
+    def arguments(**kwargs):
+        """ Receive a list of arguments for this client """
+        raise NotImplemented(
+            'arguments() was not implemented for this client plugin')
 
 
 @unique

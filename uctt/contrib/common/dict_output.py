@@ -35,6 +35,8 @@ class DictOutputPlugin(OutputBase):
             applied to the data as it is added.
 
         """
+        assert isinstance(data, dict), type(data)
+
         self.config_instance_id = 'dict-output-{}'.format(self.instance_id)
         self.config.add_source(PLUGIN_ID_SOURCE_DICT, self.config_instance_id).set_data({
             self.config_instance_id: data

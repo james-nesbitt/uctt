@@ -61,7 +61,7 @@ class KubernetesClientPlugin(ClientBase):
 
     """
 
-    def args(self, config_file: str):
+    def arguments(self, kube_config_file: str):
         """ set Kubernetes client args
 
         This implements the args part of the client interface.
@@ -78,9 +78,11 @@ class KubernetesClientPlugin(ClientBase):
         """
         logger.debug("Creating Kuberentes client from config file")
         self.api_client = kubernetes.config.new_client_from_config(
-            config_file=config_file)
+            config_file=kube_config_file)
 
     def get_CoreV1Api_client(self):
         """ Get a CoreV1Api client """
+        assert self.api_client, "You must run the arguments() method before using this client"
+
         logger.debug("Retrieving kubernetes CoreV1Api client from api_client")
         return kubernetes.client.CoreV1Api(self.api_client)

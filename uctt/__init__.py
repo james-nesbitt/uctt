@@ -1,8 +1,22 @@
+"""
+
+UCTT Core toolset
+
+In this module, the root package, are found a number of tool plugin constructors
+that can be used to get instances of the plugins based on either passed in data
+or configerus config.
+
+The contstruction.py module does the heavy lifting of building plugins and
+PluginInstances sets.
+
+"""
+
 from importlib import metadata
 from typing import Dict, List, Any
 import logging
 
 from configerus.config import Config
+from configerus.loaded import LOADED_KEY_ROOT
 from configerus.contrib.dict import PLUGIN_ID_SOURCE_DICT
 
 from .plugin import Type
@@ -84,7 +98,7 @@ def bootstrap(config: Config, bootstraps=[]):
 
 UCTT_PROVISIONERS_CONFIG_LABEL = 'provisioners'
 """ provisioners_from_config will load this config to decide how to build provisioner plugins """
-UCTT_PROVISIONERS_CONFIG_KEY_PROVISIONERS = '.'
+UCTT_PROVISIONERS_CONFIG_KEY_PROVISIONERS = LOADED_KEY_ROOT
 """ default loaded config get key for provisioners in UCTT_PROVISIONERS_CONFIG_LABEL """
 UCTT_PROVISIONER_CONFIG_LABEL = 'provisioner'
 """ default config label which should define a single provisioner """
@@ -94,11 +108,13 @@ UCTT_PROVISIONER_CONFIG_KEY_PROVISIONER = '.'
 
 def new_provisioners_from_config(config: Config,
                                  label: str = UCTT_PROVISIONERS_CONFIG_LABEL,
-                                 key: str = UCTT_PROVISIONERS_CONFIG_KEY_PROVISIONERS) -> PluginInstances:
+                                 base: str = UCTT_PROVISIONERS_CONFIG_KEY_PROVISIONERS) -> PluginInstances:
     """ Create provisioners from some config
 
     This method will interpret some config values as being usable to build
     a PluginInstances set of provisioner plugins
+
+    @TODO - we should enable configerus validation
 
     Parameters:
     -----------
@@ -108,7 +124,7 @@ def new_provisioners_from_config(config: Config,
     label (str) : config label to load to pull provisioner configuration. That
         label is loaded and config is pulled to produce a list of provisioners
 
-    key (str) : config key to get a Dict of provisioners configurations.
+    base (str) : config key to get a Dict of provisioners configurations.
 
     Returns:
     --------
@@ -125,12 +141,11 @@ def new_provisioners_from_config(config: Config,
 
     """
     return new_plugins_from_config(
-        config=config, type=Type.PROVISIONER, label=label, key=key)
+        config=config, type=Type.PROVISIONER, label=label, base=base)
 
 
-def new_provisioner_from_config(config: Config,
-                                label: str = UCTT_PROVISIONER_CONFIG_LABEL,
-                                key: str = UCTT_PROVISIONER_CONFIG_KEY_PROVISIONER) -> ProvisionerBase:
+def new_provisioner_from_config(config: Config, label: str = UCTT_PROVISIONER_CONFIG_LABEL,
+                                base: str = UCTT_PROVISIONER_CONFIG_KEY_PROVISIONER, instance_id: str = '') -> ProvisionerBase:
     """ Create a provisioner from some config
 
     This method will interpret some config values as being usable to build a
@@ -144,7 +159,9 @@ def new_provisioner_from_config(config: Config,
     label (str) : config label to load to pull provisioner configuration. That
         label is loaded and config is pulled to produce a list of provisioners
 
-    key (str) : config key to get a Dict of provisioners configurations.
+    base (str) : config key to get a Dict of provisioners configurations.
+
+    instance_id (str) : optionally force a particular instance_id to be assigned
 
     Returns:
     --------
@@ -160,10 +177,10 @@ def new_provisioner_from_config(config: Config,
     the module that contains the factory method with a decorator.
 
     """
-    logger.debug("Creating provisioner: [{}]:[{}][{}] : {}".format(
-        label, key, instance_id, config.load(label).get(key)))
+    logger.debug("Creating provisioner: [{}]:[{}][{}]".format(
+        label, base, instance_id))
     return new_plugin_from_config(
-        config=config, type=Type.PROVISIONER, label=label, key=key)
+        config=config, type=Type.PROVISIONER, label=label, base=base)
 
 
 def new_provisioners_from_dict(
@@ -195,7 +212,7 @@ def new_provisioners_from_dict(
 
 
 def new_provisioner_from_dict(
-        config: Config, provisioner_dict: Dict[str, Any]) -> ProvisionerBase:
+        config: Config, provisioner_dict: Dict[str, Any], instance_id: str = '') -> ProvisionerBase:
     """ Create a provisioner plugin from a Dict of information for it
 
     Create a new provisioner plugin from a map/dict of settings for the needed parameters.
@@ -211,6 +228,8 @@ def new_provisioner_from_dict(
 
         @see new_plugin_from_dict for more details.
 
+    instance_id (str) : optionally force a particular instance_id to be assigned
+
     Return:
     -------
 
@@ -218,7 +237,7 @@ def new_provisioner_from_dict(
 
     """
     return new_plugin_from_dict(
-        config=config, type=Type.PROVISIONER, plugin_dict=provisioner_dict)
+        config=config, type=Type.PROVISIONER, plugin_dict=provisioner_dict, instance_id=instance_id)
 
 
 def new_provisioner(config: Config, plugin_id: str,
@@ -262,7 +281,7 @@ UCTT_CLIENT_CONFIG_KEY_CLIENT = '.'
 
 def new_clients_from_config(config: Config,
                             label: str = UCTT_CLIENTS_CONFIG_LABEL,
-                            key: str = UCTT_CLIENTS_CONFIG_KEY_CLIENTS) -> PluginInstances:
+                            base: str = UCTT_CLIENTS_CONFIG_KEY_CLIENTS) -> PluginInstances:
     """ Create clients from some config
 
     This method will interpret some config values as being usable to build
@@ -276,7 +295,7 @@ def new_clients_from_config(config: Config,
     label (str) : config label to load to pull client configuration. That
         label is loaded and config is pulled to produce a list of clients
 
-    key (str) : config key to get a Dict of clients configurations.
+    base (str) : config key to get a Dict of clients configurations.
 
     Returns:
     --------
@@ -293,12 +312,12 @@ def new_clients_from_config(config: Config,
 
     """
     return new_plugins_from_config(
-        config=config, type=Type.CLIENT, label=label, key=key)
+        config=config, type=Type.CLIENT, label=label, base=base)
 
 
 def new_client_from_config(config: Config,
                            label: str = UCTT_CLIENT_CONFIG_LABEL,
-                           key: str = UCTT_CLIENT_CONFIG_KEY_CLIENT) -> ClientBase:
+                           base: str = UCTT_CLIENT_CONFIG_KEY_CLIENT) -> ClientBase:
     """ Create a client from some config
 
     This method will interpret some config values as being usable to build a
@@ -312,7 +331,7 @@ def new_client_from_config(config: Config,
     label (str) : config label to load to pull client configuration. That
         label is loaded and config is pulled to produce a list of clients
 
-    key (str) : config key to get a Dict of clients configurations.
+    base (str) : config key to get a Dict of clients configurations.
 
     Returns:
     --------
@@ -329,7 +348,7 @@ def new_client_from_config(config: Config,
 
     """
     return new_plugin_from_config(
-        config=config, type=Type.CLIENT, label=label, key=key)
+        config=config, type=Type.CLIENT, label=label, base=base)
 
 
 def new_clients_from_dict(
@@ -427,7 +446,7 @@ UCTT_WORKLOAD_CONFIG_KEY_WORKLOAD = '.'
 
 def new_workloads_from_config(config: Config,
                               label: str = UCTT_WORKLOADS_CONFIG_LABEL,
-                              key: str = UCTT_WORKLOADS_CONFIG_KEY_WORKLOADS) -> PluginInstances:
+                              base: str = UCTT_WORKLOADS_CONFIG_KEY_WORKLOADS) -> PluginInstances:
     """ Create workloads from some config
 
     This method will interpret some config values as being usable to build
@@ -441,7 +460,7 @@ def new_workloads_from_config(config: Config,
     label (str) : config label to load to pull workload configuration. That
         label is loaded and config is pulled to produce a list of workloads
 
-    key (str) : config key to get a Dict of workloads configurations.
+    base (str) : config key to get a Dict of workloads configurations.
 
     Returns:
     --------
@@ -458,12 +477,12 @@ def new_workloads_from_config(config: Config,
 
     """
     return new_plugins_from_config(
-        config=config, type=Type.WORKLOAD, label=label, key=key)
+        config=config, type=Type.WORKLOAD, label=label, base=base)
 
 
 def new_workload_from_config(config: Config,
                              label: str = UCTT_WORKLOAD_CONFIG_LABEL,
-                             key: str = UCTT_WORKLOAD_CONFIG_KEY_WORKLOAD) -> WorkloadBase:
+                             base: str = UCTT_WORKLOAD_CONFIG_KEY_WORKLOAD) -> WorkloadBase:
     """ Create a workload from some config
 
     This method will interpret some config values as being usable to build
@@ -477,7 +496,7 @@ def new_workload_from_config(config: Config,
     label (str) : config label to load to pull workload configuration. That
         label is loaded and config is pulled to produce a list of workloads
 
-    key (str) : config key to get a Dict of workloads configurations.
+    base (str) : config key to get a Dict of workloads configurations.
 
     Returns:
     --------
@@ -494,7 +513,7 @@ def new_workload_from_config(config: Config,
 
     """
     return new_plugin_from_config(
-        config=config, type=Type.WORKLOAD, label=label, key=key)
+        config=config, type=Type.WORKLOAD, label=label, base=base)
 
 
 def new_workloads_from_dict(
@@ -593,7 +612,7 @@ UCTT_WORKLOAD_CONFIG_KEY_WORKLOAD = '.'
 
 def new_workloads_from_config(config: Config,
                               label: str = UCTT_WORKLOADS_CONFIG_LABEL,
-                              key: str = UCTT_WORKLOADS_CONFIG_KEY_WORKLOADS) -> PluginInstances:
+                              base: str = UCTT_WORKLOADS_CONFIG_KEY_WORKLOADS) -> PluginInstances:
     """ Create workloads from some config
 
     This method will interpret some config values as being usable to build
@@ -607,7 +626,7 @@ def new_workloads_from_config(config: Config,
     label (str) : config label to load to pull workload configuration. That
         label is loaded and config is pulled to produce a list of workloads
 
-    key (str) : config key to get a Dict of workloads configurations.
+    base (str) : config key to get a Dict of workloads configurations.
 
     Returns:
     --------
@@ -624,12 +643,12 @@ def new_workloads_from_config(config: Config,
 
     """
     return new_plugins_from_config(
-        config=config, type=Type.WORKLOAD, label=label, key=key)
+        config=config, type=Type.WORKLOAD, label=label, base=base)
 
 
 def new_workload_from_config(config: Config,
                              label: str = UCTT_WORKLOAD_CONFIG_LABEL,
-                             key: str = UCTT_WORKLOAD_CONFIG_KEY_WORKLOAD) -> WorkloadBase:
+                             base: str = UCTT_WORKLOAD_CONFIG_KEY_WORKLOAD) -> WorkloadBase:
     """ Create a workload from some config
 
     This method will interpret some config values as being usable to build
@@ -643,7 +662,7 @@ def new_workload_from_config(config: Config,
     label (str) : config label to load to pull workload configuration. That
         label is loaded and config is pulled to produce a list of workloads
 
-    key (str) : config key to get a Dict of workloads configurations.
+    base (str) : config key to get a Dict of workloads configurations.
 
     Returns:
     --------
@@ -660,7 +679,7 @@ def new_workload_from_config(config: Config,
 
     """
     return new_plugin_from_config(
-        config=config, type=Type.WORKLOAD, label=label, key=key)
+        config=config, type=Type.WORKLOAD, label=label, base=base)
 
 
 def new_workloads_from_dict(
@@ -759,7 +778,7 @@ UCTT_OUTPUT_CONFIG_KEY_OUTPUT = '.'
 
 def new_outputs_from_config(config: Config,
                             label: str = UCTT_OUTPUTS_CONFIG_LABEL,
-                            key: str = UCTT_OUTPUTS_CONFIG_KEY_OUTPUTS) -> PluginInstances:
+                            base: str = UCTT_OUTPUTS_CONFIG_KEY_OUTPUTS) -> PluginInstances:
     """ Create outputs from some config
 
     This method will interpret some config values as being usable to build
@@ -773,7 +792,7 @@ def new_outputs_from_config(config: Config,
     label (str) : config label to load to pull output configuration. That
         label is loaded and config is pulled to produce a list of outputs
 
-    key (str) : config key to get a Dict of outputs configurations.
+    base (str) : config key to get a Dict of output configurations.
 
     Returns:
     --------
@@ -790,12 +809,12 @@ def new_outputs_from_config(config: Config,
 
     """
     return new_plugins_from_config(
-        config=config, type=Type.OUTPUT, label=label, key=key)
+        config=config, type=Type.OUTPUT, label=label, base=base)
 
 
 def new_output_from_config(config: Config,
                            label: str = UCTT_OUTPUT_CONFIG_LABEL,
-                           key: str = UCTT_OUTPUT_CONFIG_KEY_OUTPUT) -> OutputBase:
+                           base: str = UCTT_OUTPUT_CONFIG_KEY_OUTPUT) -> OutputBase:
     """ Create a output from some config
 
     This method will interpret some config values as being usable to build
@@ -809,7 +828,7 @@ def new_output_from_config(config: Config,
     label (str) : config label to load to pull output configuration. That
         label is loaded and config is pulled to produce a list of outputs
 
-    key (str) : config key to get a Dict of outputs configurations.
+    base (str) : config key to get a Dict of output configurations.
 
     Returns:
     --------
@@ -826,7 +845,7 @@ def new_output_from_config(config: Config,
 
     """
     return new_plugin_from_config(
-        config=config, type=Type.OUTPUT, label=label, key=key)
+        config=config, type=Type.OUTPUT, label=label, base=base)
 
 
 def new_outputs_from_dict(

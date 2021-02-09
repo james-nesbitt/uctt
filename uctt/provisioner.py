@@ -15,6 +15,13 @@ logger = logging.getLogger('uctt.provisioner')
 UCTT_PLUGIN_TYPE_PROVISIONER = Type.PROVISIONER
 """ Fast access to the Provisioner plugin_id """
 
+UCTT_OUTPUT_CONFIG_PROVISIONERS_LABEL = 'provisioners'
+""" A centralized configerus load labe for multiple provisioners """
+UCTT_OUTPUT_CONFIG_PROVISIONERS_KEY = 'provisioners'
+""" A centralized configerus key for multiple provisioners """
+UCTT_OUTPUT_CONFIG_PROVISIONER_KEY = 'provisioner'
+""" A centralized configerus key for one provisioner """
+
 
 class ProvisionerBase(UCTTPlugin):
     "Base Provisioner plugin class"
@@ -34,20 +41,27 @@ class ProvisionerBase(UCTTPlugin):
         desired.
 
         """
-        pass
+        raise NotImplementedError(
+            'This provisioner has not yet implemented prepare')
 
     def apply(self):
         """ bring a cluster to the configured state """
-        pass
+        raise NotImplementedError(
+            'This provisioner has not yet implemented apply')
 
     def destroy(self):
         """ remove all resources created for the cluster """
-        pass
+        raise NotImplementedError(
+            'This provisioner has not yet implemented destroy')
 
-    def get_output(self, name: str):
+    def get_output(self, plugin_id: str = '', instance_id: str = '',
+                   exception_if_missing: bool = True):
         """ retrieve an output from the provisioner """
-        pass
+        raise NotImplementedError(
+            'This provisioner has not yet implemented get_output')
 
-    def get_client(self, type: str, index: str = ''):
+    def get_client(self, plugin_id: str = '', instance_id: str = '',
+                   exception_if_missing: bool = True):
         """ make a client of the type, and optionally of the index """
-        pass
+        raise NotImplementedError(
+            'This provisioner has not yet implemented get_client')

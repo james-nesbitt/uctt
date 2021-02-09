@@ -2,18 +2,21 @@ import logging
 
 from configerus.config import Config
 
-from .plugin import UCTTPlugin, Type
+from .plugin import UCCTArgumentsPlugin, Type
 
 logger = logging.getLogger('uctt.workload')
 
 UCTT_PLUGIN_ID_WORKLOAD = Type.WORKLOAD
 """ Fast access to the workload type """
 
+UCTT_OUTPUT_CONFIG_WORKLOADS_LABEL = 'workloads'
+""" A centralized configerus load label for multiple workloads """
+UCTT_OUTPUT_CONFIG_WORKLOADS_KEY = 'workloads'
+""" A centralized configerus key for multiple workloads """
+UCTT_OUTPUT_CONFIG_WORKLOAD_KEY = 'workload'
+""" A centralized configerus key for one workload """
 
-class WorkloadBase(UCTTPlugin):
+
+class WorkloadBase(UCCTArgumentsPlugin):
     """ Base class for workload plugins """
-
-    def arguments(**kwargs):
-        """ Receive a list of arguments for this workload """
-        raise NotImplemented(
-            'arguments() was not implemented for this workload plugin')
+    pass

@@ -14,8 +14,8 @@ class DockerClientPlugin(ClientBase, DockerClient):
 
     """
 
-    def args(self, host: str, cert_path: str, tls_verify: bool = True,
-             compose_tls_version: str = 'TLSv1_2'):
+    def arguments(self, host: str, cert_path: str, tls_verify: bool = True,
+                  compose_tls_version: str = 'TLSv1_2'):
         """ Build the DockerClient
 
         In order to decorate this existing class as a DockerClient, without using the
