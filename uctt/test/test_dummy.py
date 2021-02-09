@@ -132,6 +132,16 @@ class ConfigTemplating(unittest.TestCase):
         provisioner = self._dummy_provisioner()
         self.assertIsInstance(provisioner, DummyProvisionerPlugin)
 
+    def test_workloads_sanity(self):
+        """ test that we can load the workloads """
+        workloads = self._dummy_workloads()
+
+        workload_one = workloads.get_plugin(instance_id='one')
+        self.assertIsInstance(workload_one, DummyWorkloadPlugin)
+
+        with self.assertRaises(KeyError):
+            workloads['does.not.exist']
+
     def test_provisioner_workflow(self):
         """ test that the provisioner can follow a decent workflow """
         provisioner = self._dummy_provisioner()
@@ -142,16 +152,6 @@ class ConfigTemplating(unittest.TestCase):
         # ...
 
         provisioner.destroy()
-
-    def test_workloads_sanity(self):
-        """ test that we can load the workloads """
-        workloads = self._dummy_workloads()
-
-        workload_one = workloads.get_plugin(instance_id='one')
-        self.assertIsInstance(workload_one, DummyWorkloadPlugin)
-
-        with self.assertRaises(KeyError):
-            workloads['does.not.exist']
 
     def test_workloads_outputs(self):
         """ test that the dummy workload got its outputs from configuration """

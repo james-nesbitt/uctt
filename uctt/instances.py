@@ -37,7 +37,7 @@ class PluginInstances(configerus_PluginInstances):
 
         self.config = config
 
-    def copy(selfr):
+    def copy(self):
         """ Make a copy of this plugin list.
 
         This copies the instance list and by copying every plugin, overriding

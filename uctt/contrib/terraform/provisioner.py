@@ -1,6 +1,6 @@
 """
 
-Dummy MTT provisioner plugin
+Terraform UCTT provisioner plugin
 
 """
 
@@ -10,9 +10,12 @@ import os
 import subprocess
 from typing import Dict, List
 
+from configerus.loaded import LOADED_KEY_ROOT
 import uctt
-import uctt.plugins
+from uctt.output import UCTT_PLUGIN_TYPE_OUTPUT, UCTT_OUTPUT_CONFIG_OUTPUTS_KEY, OutputBase
+from uctt.instances import PluginInstances
 from uctt.provisioner import ProvisionerBase
+from uctt.contrib.common import UCTT_PLUGIN_ID_OUTPUT_DICT, UCTT_PLUGIN_ID_OUTPUT_TEXT
 
 logger = logging.getLogger('uctt.contrib.provisioner:terraform')
 
@@ -26,9 +29,9 @@ TERRAFORM_PROVISIONER_CONFIG_VARS_KEY = 'vars'
 """ config key for the terraform vars Dict, which will be written to a file """
 TERRAFORM_PROVISIONER_CONFIG_VARS_PATH_KEY = 'vars_path'
 """ config key for the terraform vars file path, where the plugin will write to """
-TERRAFORM_PROVISIONER_CONFIG_PATH_KEY = ''
+TERRAFORM_PROVISIONER_CONFIG_PATH_KEY = LOADED_KEY_ROOT
 """ config key for the terraform plan path """
-TERRAFORM_PROVISIONER_CONFIG_OUTPUTS_KEY = 'output'
+TERRAFORM_PROVISIONER_CONFIG_OUTPUTS_KEY = UCTT_OUTPUT_CONFIG_OUTPUTS_KEY
 """ config key for defining how to interpret the terraform outputs """
 TERRAFORM_PROVISIONER_DEFAULT_VARS_FILE = 'mtt_terraform.tfvars.json'
 """ Default vars file if none was specified """
@@ -70,7 +73,8 @@ class TerraformProvisionerPlugin(ProvisionerBase):
 
     """
 
-    def prepare(self, label: str = TERRAFORM_PROVISIONER_CONFIG_LABEL):
+    def prepare(self, label: str = TERRAFORM_PROVISIONER_CONFIG_LABEL,
+                base: str = LOADED_KEY_ROOT):
         """
 
         Interpret provided config and configure the object with all of the needed
@@ -81,15 +85,23 @@ class TerraformProvisionerPlugin(ProvisionerBase):
         logger.info("Preparing Terraform setting")
 
         self.terraform_config_label = label
+        """ configerus load label that should contain all of the config """
+        self.terraform_config_base = base
+        """ configerus get key that should contain all tf config """
         self.terraform_config = self.config.load(self.terraform_config_label)
         """ get a configerus LoadedConfig for the terraform label """
 
         self.working_dir = self.terraform_config.get(
-            TERRAFORM_PROVISIONER_CONFIG_PLAN_PATH_KEY)
+            TERRAFORM_PROVISIONER_CONFIG_PLAN_PATH_KEY,
+            base=self.terraform_config_base)
         """ all subprocess commands for terraform will be run in this path """
+        if not self.working_dir:
+            raise ValueError(
+                "Plugin config did not give us a working/plan path: {}".format(self.terraform_config.data))
 
         state_path = self.terraform_config.get(
             TERRAFORM_PROVISIONER_CONFIG_STATE_PATH_KEY,
+            base=self.terraform_config_base,
             exception_if_missing=False)
         """ terraform state path """
         if not state_path:
@@ -98,13 +110,15 @@ class TerraformProvisionerPlugin(ProvisionerBase):
                 TERRAFORM_PROVISIONER_DEFAULT_STATE_SUBPATH)
 
         self.vars = self.terraform_config.get(
-            TERRAFORM_PROVISIONER_CONFIG_VARS_KEY)
+            TERRAFORM_PROVISIONER_CONFIG_VARS_KEY,
+            base=self.terraform_config_base)
         """ List of vars to pass to terraform.  Will be written to a file """
         if not self.vars:
             self.vars = {}
 
         vars_path = self.terraform_config.get(
             TERRAFORM_PROVISIONER_CONFIG_VARS_PATH_KEY,
+            base=self.terraform_config_base,
             exception_if_missing=False)
         """ vars file containing vars which will be written before running terraform """
         if not vars_path:
@@ -148,7 +162,20 @@ class TerraformProvisionerPlugin(ProvisionerBase):
 
     """ Cluster Interaction """
 
-    def get_outputs(self) -> uctt.plugin.PluginInstances:
+    def get_output(self, instance_id: str = '', plugin_id: str = '',
+                   exception_if_missing: bool = True) -> OutputBase:
+        """ retrieve an output from the provisioner """
+        outputs = self.get_outputs()
+        return outputs.get_plugin(
+            type=UCTT_PLUGIN_TYPE_OUTPUT, plugin_id=plugin_id, instance_id=instance_id)
+
+    def get_client(self, plugin_id: str = '', instance_id: str = '',
+                   exception_if_missing: bool = True):
+        """ make a client of the type, and optionally of the index """
+        raise NotImplementedError(
+            'This provisioner has not yet implemented get_client')
+
+    def get_outputs(self) -> PluginInstances:
         """ retrieve an output from terraform
 
         For other UCTT plugins we can just load configuration, but for output we
@@ -157,23 +184,60 @@ class TerraformProvisionerPlugin(ProvisionerBase):
         then we make some assumptions about plugin type and add it to the list.
 
         """
-        try:
-            outputs = uctt.new_outputs_from_config(
-                self.config,
-                self.terraform_config_label,
-                TERRAFORM_PROVISIONER_CONFIG_OUTPUTS_KEY)
-        except BaseException:
-            outputs = uctt.plugin.PluginInstances()
 
-        for output_key, output_value in self.tf.output().items():
-            if not outputs.has_plugin(instance_id=output_key):
-                # we only know how to create 2 kinds of outputs
-                if isinstance(output_value, dict):
-                    output.add_plugin(TEXT, output_key).arguments(output_value)
+        # First make a set of output plugins config told us about (may be
+        # empty)
+        outputs_key = '{}.{}'.format(
+            self.terraform_config_base,
+            TERRAFORM_PROVISIONER_CONFIG_OUTPUTS_KEY) if not self.terraform_config_base == LOADED_KEY_ROOT else TERRAFORM_PROVISIONER_CONFIG_OUTPUTS_KEY
+        outputs = uctt.new_outputs_from_config(
+            config=self.config,
+            label=self.terraform_config_label,
+            base=outputs_key)
+
+        # now we ask TF what output it nows about and merge together those as
+        # new output plugins.
+        # tf.outputs() produces a list of (sensitive:bool, type: [str,  object,
+        # value:Any])
+        for output_key, output_struct in self.tf.output().items():
+            # we only know how to create 2 kinds of outputs
+            output_sensitive = output_struct['sensitive']
+            output_type = output_struct['type'][0]
+            output_spec = output_struct['type'][1]
+            output_value = output_struct['value']
+
+            # see if we already have an output plugin for this name
+            output_instance = outputs.get_plugin(
+                type=UCTT_PLUGIN_TYPE_OUTPUT,
+                instance_id=output_key,
+                exception_if_missing=False)
+            if not output_instance:
+                if output_type == 'object':
+                    plugin = outputs.add_plugin(
+                        type=UCTT_PLUGIN_TYPE_OUTPUT,
+                        plugin_id=UCTT_PLUGIN_ID_OUTPUT_DICT,
+                        instance_id=output_key,
+                        priority=80)
                 else:
-                    output.add_plugin(
-                        TEXT, output_key).arguments(
-                        str(output_value))
+                    plugin = outputs.add_plugin(
+                        type=UCTT_PLUGIN_TYPE_OUTPUT,
+                        plugin_id=UCTT_PLUGIN_ID_OUTPUT_TEXT,
+                        instance_id=output_key,
+                        priority=80)
+
+            if output_type == 'object':
+                plugin = outputs.add_plugin(
+                    type=UCTT_PLUGIN_TYPE_OUTPUT,
+                    plugin_id=UCTT_PLUGIN_ID_OUTPUT_DICT,
+                    instance_id=output_key,
+                    priority=80)
+                plugin.arguments(output_value)
+            else:
+                plugin = outputs.add_plugin(
+                    type=UCTT_PLUGIN_TYPE_OUTPUT,
+                    plugin_id=UCTT_PLUGIN_ID_OUTPUT_TEXT,
+                    instance_id=output_key,
+                    priority=80)
 
         return outputs
 

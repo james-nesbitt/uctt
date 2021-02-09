@@ -7,7 +7,7 @@ logger = logging.getLogger('uctt.contrib.common.output.text')
 class TextOutputPlugin(OutputBase):
     """ MTT Output plugin a text output type
 
-    this just gets and sets text
+    this just gets and sets text. Nothing fancy.
 
     """
 
