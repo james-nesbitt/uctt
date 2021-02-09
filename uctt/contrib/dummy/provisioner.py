@@ -57,6 +57,7 @@ the appropriate plugins:
 """
 
 import logging
+from typing import Any
 
 from configerus.loaded import LOADED_KEY_ROOT
 import uctt
@@ -79,7 +80,7 @@ class DummyProvisionerPlugin(ProvisionerBase):
     """ Dummy provisioner class """
 
     def prepare(
-            self, label: str = UCTT_DUMMY_PROVISIONER_CONFIG_LABEL, base: str = LOADED_KEY_ROOT):
+            self, label: str = UCTT_DUMMY_PROVISIONER_CONFIG_LABEL, base: Any = LOADED_KEY_ROOT):
         """
 
         Interpret provided config and configure the object with outputs and
@@ -88,23 +89,14 @@ class DummyProvisionerPlugin(ProvisionerBase):
         """
         logger.info("{}:execute: prepare()".format(self.instance_id))
 
-        if base == LOADED_KEY_ROOT:
-            clients_key = UCTT_DUMMY_PROVISIONER_CONFIG_KEY_CLIENTS
-            outputs_key = UCTT_DUMMY_PROVISIONER_CONFIG_KEY_OUTPUTS
-        else:
-            clients_key = '{}.{}'.format(
-                base, UCTT_DUMMY_PROVISIONER_CONFIG_KEY_CLIENTS)
-            outputs_key = '{}.{}'.format(
-                base, UCTT_DUMMY_PROVISIONER_CONFIG_KEY_OUTPUTS)
-
         self.clients = uctt.new_clients_from_config(
             config=self.config,
             label=label,
-            base=clients_key)
+            base=[base, UCTT_DUMMY_PROVISIONER_CONFIG_KEY_CLIENTS])
         self.outputs = uctt.new_outputs_from_config(
             config=self.config,
             label=label,
-            base=outputs_key)
+            base=[base, UCTT_DUMMY_PROVISIONER_CONFIG_KEY_OUTPUTS])
 
     def apply(self):
         """ pretend to bring a cluster up """

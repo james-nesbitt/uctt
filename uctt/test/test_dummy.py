@@ -49,7 +49,7 @@ class ConfigTemplating(unittest.TestCase):
                                 'one': {
                                     'plugin_id': 'text',
                                     'arguments': {
-                                        'text': "prov client one output one"
+                                        'data': "prov client one output one"
                                     }
                                 },
                                 'two': {
@@ -70,7 +70,7 @@ class ConfigTemplating(unittest.TestCase):
                     'dummy': {
                         'plugin_id': 'text',
                         'arguments': {
-                            'text': "prov dummy output one"
+                            'data': "prov dummy output one"
                         }
                     }
                 }
@@ -86,7 +86,7 @@ class ConfigTemplating(unittest.TestCase):
                             'one': {
                                 'plugin_id': 'text',
                                 'arguments': {
-                                    'text': "client two dummy output one"
+                                    'data': "client two dummy output one"
                                 }
                             }
                         },

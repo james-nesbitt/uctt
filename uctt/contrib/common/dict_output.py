@@ -67,4 +67,4 @@ class DictOutputPlugin(OutputBase):
         if hasattr(self, 'loaded_config'):
             return self.loaded_config.get(key, validator=validator)
 
-        raise Exception("No data has been assigned to this output object")
+        raise AttributeError("No data has been assigned to this output object")

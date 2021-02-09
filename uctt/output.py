@@ -22,3 +22,7 @@ UCTT_OUTPUT_CONFIG_OUTPUT_KEY = 'output'
 class OutputBase(UCCTArgumentsPlugin):
     """ Base class for output plugins """
     pass
+
+    def has_outout(self):
+        """ Does this plugin have output """
+        raise NotImplemented("this functionality has not yet been written.")

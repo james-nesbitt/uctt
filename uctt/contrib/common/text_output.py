@@ -11,9 +11,9 @@ class TextOutputPlugin(OutputBase):
 
     """
 
-    def arguments(self, text):
+    def arguments(self, data: str):
         """ Assign text """
-        self.text = text
+        self.text = data
 
     def get_output(self):
         """ retrieve assigned output """
