@@ -52,7 +52,7 @@ from .plugin import (Factory, Type, UCTTPlugin, UCTT_PLUGIN_CONFIG_KEY_TYPE,
                      UCTT_PLUGIN_CONFIG_KEY_PLUGINID, UCTT_PLUGIN_CONFIG_KEY_INSTANCEID,
                      UCTT_PLUGIN_CONFIG_KEY_ARGUMENTS, UCTT_PLUGIN_CONFIG_KEY_PRIORITY, UCTT_PLUGIN_CONFIG_KEY_CONFIG,
                      UCTT_PLUGIN_CONFIG_KEY_VALIDATORS)
-                     # a lot of centralized config labels and keys are kept in .plugin
+# a lot of centralized config labels and keys are kept in .plugin
 from .instances import PluginInstances
 
 
@@ -75,8 +75,12 @@ def new_plugins_from_config(config: Config, label: str, base: Any = LOADED_KEY_R
     label (str) : config label to load to pull plugin configuration. That
         label is loaded and config is pulled to produce a list of plugins
 
-    base (str) : config key to get a Dict of plugins configurations.  This should
-        point to a dict of plugin configurations.
+    base (str|List) : config key to get a Dict of plugins configurations.  This
+        should point to a dict of plugin configurations.
+        A list of strings is valid as configerus.loaded.get() can take that as
+        an argument.
+        We call this base instead of key as we will be searching for sub-paths
+        to pull individual elements
 
     type (.plugin.Type) : plugin type to create, pulled from the config/dict if
         omitted
@@ -98,12 +102,6 @@ def new_plugins_from_config(config: Config, label: str, base: Any = LOADED_KEY_R
     the module that contains the factory method with a decorator.
 
     """
-    # sometime we get an empty string instead of the root value
-    if not base:
-        logger.warn(
-            'Received an empty config .get(base=) value.  Assuming it was meant to be LOADED_KEY_ROOT')
-        base = LOADED_KEY_ROOT
-
     instances = PluginInstances(config=config)
     """ plugin set which will be used to create new plugins """
 
@@ -117,10 +115,15 @@ def new_plugins_from_config(config: Config, label: str, base: Any = LOADED_KEY_R
         else:
             return instances
 
+    # we are going to be pasing key lists to configerus for this instance
+    # so make sure that we have the list key type.
+    if not isinstance(base, list):
+        base = [base]
+
     for instance_id in plugin_list.keys():
-        # a new base will extend the given key for this list, if it is not root
-        instance_base = '{}.{}'.format(
-            base, instance_id) if not base == LOADED_KEY_ROOT else instance_id
+        # configerus loaded .get() key path for the instance
+        instance_base = base.copy()
+        instance_base.append(instance_id)
 
         new_plugin_from_config(
             config=config,
@@ -183,7 +186,7 @@ def new_plugins_from_dict(config: Config, plugin_list: Dict[str, Dict[str, Any]]
     return instances
 
 
-def new_plugin_from_config(config: Config, label: str, base: str = LOADED_KEY_ROOT, type: Type = None,
+def new_plugin_from_config(config: Config, label: str, base: Any = LOADED_KEY_ROOT, type: Type = None,
                            instance_id: str = '', validator: str = '', instances: PluginInstances = None) -> UCTTPlugin:
     """ Create a plugin from some config
 
@@ -214,8 +217,12 @@ def new_plugin_from_config(config: Config, label: str, base: str = LOADED_KEY_RO
     label (str) : config label to load to pull plugin configuration. That
         label is loaded and config is pulled to produce a list of plugins
 
-    base (str) : config key used as a .get(base=) for all gets.  With this you
-        can instruct to pull config from a section of loaded config.
+    base (str|List) : config key used as a .get() base for all gets.  With this
+        you can instruct to pull config from a section of loaded config.
+        A list of strings is valid because configerus.loaded.get() can take that
+        as an argument. We will be using the list syntax anyway.
+        We call this base instead of key as we will be searching for sub-paths
+        to pull individual elements.
 
     instance_id (str) : optionally pass an instance_id for the item.
 
@@ -241,18 +248,15 @@ def new_plugin_from_config(config: Config, label: str, base: str = LOADED_KEY_RO
     """
     logger.debug('Create plugin [{}][{}]'.format(type, instance_id))
 
-    # sometime we get an empty string instead of the root value
-    if not base:
-        logger.warn(
-            'Received an empty config .get(base=) value.  Assuming it was meant to be LOADED_KEY_ROOT')
-        base = LOADED_KEY_ROOT
+    if not isinstance(base, list):
+        base = [base]
 
     config_plugin = config.load(label)
     """ loaded configuration for the plugin """
 
     validators = []
     config_validators = config_plugin.get(
-        UCTT_PLUGIN_CONFIG_KEY_VALIDATORS, base=base)
+        base + [UCTT_PLUGIN_CONFIG_KEY_VALIDATORS])
     if config_validators:
         validators = config_validators
     if validator:
@@ -261,21 +265,21 @@ def new_plugin_from_config(config: Config, label: str, base: str = LOADED_KEY_RO
         for validator in validators:
             config_plugin.get(base, validator=validator)
 
-    plugin_id = config_plugin.get(UCTT_PLUGIN_CONFIG_KEY_PLUGINID, base=base)
+    plugin_id = config_plugin.get(base + [UCTT_PLUGIN_CONFIG_KEY_PLUGINID])
     if not plugin_id:
         raise ValueError(
-            "Could not find a plugin_id when trying to create a plugin:[{}][{}][{}] : {}".format(type, label, key, config_plugin.get(key)))
+            "Could not find a plugin_id when trying to create a plugin:[{}][{}][{}] : {}".format(type, label, base, config_plugin.get(base)))
 
     if type is None:
-        type = config_plugin.get(UCTT_PLUGIN_CONFIG_KEY_TYPE, base=base)
+        type = config_plugin.get(base + [UCTT_PLUGIN_CONFIG_KEY_TYPE])
     if not type:
         raise ValueError(
-            "Could not find a plugin type when trying to create a plugin:[{}][{}][{}] : {}".format(type, label, key, config_plugin.get(key)))
+            "Could not find a plugin type when trying to create a plugin:[{}][{}][{}] : {}".format(type, label, base, config_plugin.get(base)))
 
     # if no instance_id was passed, try to load one or just make one up
     if not instance_id:
         instance_id = config_plugin.get(
-            UCTT_PLUGIN_CONFIG_KEY_INSTANCEID, base=base)
+            base + [UCTT_PLUGIN_CONFIG_KEY_INSTANCEID])
         if not instance_id:
             instance_id = '{}-{}'.format(type, plugin_id)
 
@@ -285,7 +289,7 @@ def new_plugin_from_config(config: Config, label: str, base: str = LOADED_KEY_RO
         # If we were given a output config, then create a copy of the config
         # object and add the passed config as new sources to the copy
         plugin_config_dict = config_plugin.get(
-            UCTT_PLUGIN_CONFIG_KEY_CONFIG, base=base)
+            base + [UCTT_PLUGIN_CONFIG_KEY_CONFIG])
         if plugin_config_dict:
             config = config.copy()
             # Add a dict source plugin for the passed 'config', giving it source id
@@ -307,14 +311,14 @@ def new_plugin_from_config(config: Config, label: str, base: str = LOADED_KEY_RO
         # We are creating an instance, so we can look for a priority
 
         priority = config_plugin.get(
-            UCTT_PLUGIN_CONFIG_KEY_INSTANCEID, base=base)
+            base + [UCTT_PLUGIN_CONFIG_KEY_INSTANCEID])
         if not priority:
             priority = config.default_priority()
             """ instance priority - this is actually a stupid place to get it from """
 
         # we can't pass config if creating the plugin as an instance in an instance list
         # as that structure needs tight control over config for copying etc.
-        if config_plugin.get(UCTT_PLUGIN_CONFIG_KEY_CONFIG, base=base):
+        if config_plugin.get(base + [UCTT_PLUGIN_CONFIG_KEY_CONFIG]):
             logger.warn(
                 'Creating a plugin for an instance list, but was given config overrides.  Ignoring it as this is not possible.')
 
@@ -326,7 +330,7 @@ def new_plugin_from_config(config: Config, label: str, base: str = LOADED_KEY_RO
 
     if hasattr(plugin, 'arguments') and callable(getattr(plugin, 'arguments')):
         plugin_args = config_plugin.get(
-            UCTT_PLUGIN_CONFIG_KEY_ARGUMENTS, base=base)
+            base + [UCTT_PLUGIN_CONFIG_KEY_ARGUMENTS])
         if plugin_args:
             plugin.arguments(**plugin_args)
 
@@ -385,7 +389,7 @@ def new_plugin_from_dict(config: Config, plugin_dict: Dict[str, Any], type: Type
             plugin_config_source_id: plugin_dict
         })
     return new_plugin_from_config(config=instance_config, type=type, label=plugin_config_source_id,
-            base=LOADED_KEY_ROOT, instance_id=instance_id, validator=validator, instances=instances)
+                                  base=LOADED_KEY_ROOT, instance_id=instance_id, validator=validator, instances=instances)
 
 
 def new_plugin(config: Config, type: Type, plugin_id: str,

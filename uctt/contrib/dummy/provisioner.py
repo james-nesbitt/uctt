@@ -63,7 +63,7 @@ import uctt
 from uctt.provisioner import ProvisionerBase
 from uctt.plugin import Type
 from uctt.output import UCTT_OUTPUT_CONFIG_OUTPUTS_KEY
-from uctt.client import UCTT_OUTPUT_CONFIG_CLIENTS_KEY
+from uctt.client import UCTT_CLIENT_CONFIG_CLIENTS_KEY
 
 logger = logging.getLogger('uctt.contrib.dummy.provisioner')
 
@@ -71,7 +71,7 @@ UCTT_DUMMY_PROVISIONER_CONFIG_LABEL = 'provisioner'
 """ What config label should be loaded to pull dummy clients and outputs """
 UCTT_DUMMY_PROVISIONER_CONFIG_KEY_OUTPUTS = UCTT_OUTPUT_CONFIG_OUTPUTS_KEY
 """ What config key should be loaded to pull dummy outputs """
-UCTT_DUMMY_PROVISIONER_CONFIG_KEY_CLIENTS = UCTT_OUTPUT_CONFIG_CLIENTS_KEY
+UCTT_DUMMY_PROVISIONER_CONFIG_KEY_CLIENTS = UCTT_CLIENT_CONFIG_CLIENTS_KEY
 """ What config key should be loaded to pull dummy clients """
 
 

@@ -15,11 +15,13 @@ logger = logging.getLogger('uctt.provisioner')
 UCTT_PLUGIN_TYPE_PROVISIONER = Type.PROVISIONER
 """ Fast access to the Provisioner plugin_id """
 
-UCTT_OUTPUT_CONFIG_PROVISIONERS_LABEL = 'provisioners'
+UCTT_PROVISIONER_CONFIG_PROVISIONERS_LABEL = 'provisioners'
 """ A centralized configerus load labe for multiple provisioners """
-UCTT_OUTPUT_CONFIG_PROVISIONERS_KEY = 'provisioners'
+UCTT_PROVISIONER_CONFIG_PROVISIONER_LABEL = 'provisioner'
+""" A centralized configerus load label a provisioner """
+UCTT_PROVISIONER_CONFIG_PROVISIONERS_KEY = 'provisioners'
 """ A centralized configerus key for multiple provisioners """
-UCTT_OUTPUT_CONFIG_PROVISIONER_KEY = 'provisioner'
+UCTT_PROVISIONER_CONFIG_PROVISIONER_KEY = 'provisioner'
 """ A centralized configerus key for one provisioner """
 
 

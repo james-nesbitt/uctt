@@ -17,16 +17,28 @@ import logging
 
 from configerus.config import Config
 from configerus.loaded import LOADED_KEY_ROOT
-from configerus.contrib.dict import PLUGIN_ID_SOURCE_DICT
 
 from .plugin import Type
 from .instances import PluginInstances
 from .constructors import new_plugins_from_config, new_plugins_from_dict, new_plugin_from_config, new_plugin_from_dict, new_plugin
-from .provisioner import ProvisionerBase
-from .workload import WorkloadBase
-from .client import ClientBase
-from .output import OutputBase
+from .provisioner import (
+    ProvisionerBase,
+    UCTT_PROVISIONER_CONFIG_PROVISIONERS_LABEL,
+    UCTT_PROVISIONER_CONFIG_PROVISIONER_LABEL)
+from .client import (
+    ClientBase,
+    UCTT_CLIENT_CONFIG_CLIENTS_LABEL,
+    UCTT_CLIENT_CONFIG_CLIENT_LABEL)
+from .output import (
+    OutputBase,
+    UCTT_OUTPUT_CONFIG_OUTPUTS_LABEL,
+    UCTT_OUTPUT_CONFIG_OUTPUT_LABEL)
+from .workload import (
+    WorkloadBase,
+    UCTT_WORKLOAD_CONFIG_WORKLOADS_LABEL,
+    UCTT_WORKLOAD_CONFIG_WORKLOAD_LABEL)
 
+# make sure that the common factory decorators are run
 import uctt.contrib.common
 
 logger = logging.getLogger('uctt')
@@ -96,19 +108,10 @@ def bootstrap(config: Config, bootstraps=[]):
 
 """ PROVISIONER CONSTRUCTION """
 
-UCTT_PROVISIONERS_CONFIG_LABEL = 'provisioners'
-""" provisioners_from_config will load this config to decide how to build provisioner plugins """
-UCTT_PROVISIONERS_CONFIG_KEY_PROVISIONERS = LOADED_KEY_ROOT
-""" default loaded config get key for provisioners in UCTT_PROVISIONERS_CONFIG_LABEL """
-UCTT_PROVISIONER_CONFIG_LABEL = 'provisioner'
-""" default config label which should define a single provisioner """
-UCTT_PROVISIONER_CONFIG_KEY_PROVISIONER = '.'
-""" default loaded config get key for provisioner settings in UCTT_PROVISIONER_CONFIG_LABEL """
-
 
 def new_provisioners_from_config(config: Config,
-                                 label: str = UCTT_PROVISIONERS_CONFIG_LABEL,
-                                 base: str = UCTT_PROVISIONERS_CONFIG_KEY_PROVISIONERS) -> PluginInstances:
+                                 label: str = UCTT_PROVISIONER_CONFIG_PROVISIONERS_LABEL,
+                                 base: Any = LOADED_KEY_ROOT) -> PluginInstances:
     """ Create provisioners from some config
 
     This method will interpret some config values as being usable to build
@@ -124,7 +127,11 @@ def new_provisioners_from_config(config: Config,
     label (str) : config label to load to pull provisioner configuration. That
         label is loaded and config is pulled to produce a list of provisioners
 
-    base (str) : config key to get a Dict of provisioners configurations.
+    base (str|List) : config key to get a Dict of plugins configurations.
+        A list of strings is valid as configerus.loaded.get() can take that as
+        an argument.
+        We call this base instead of key as we will be searching for sub-paths
+        to pull individual elements
 
     Returns:
     --------
@@ -144,8 +151,8 @@ def new_provisioners_from_config(config: Config,
         config=config, type=Type.PROVISIONER, label=label, base=base)
 
 
-def new_provisioner_from_config(config: Config, label: str = UCTT_PROVISIONER_CONFIG_LABEL,
-                                base: str = UCTT_PROVISIONER_CONFIG_KEY_PROVISIONER, instance_id: str = '') -> ProvisionerBase:
+def new_provisioner_from_config(config: Config, label: str = UCTT_PROVISIONER_CONFIG_PROVISIONER_LABEL,
+                                base: Any = LOADED_KEY_ROOT, instance_id: str = '') -> ProvisionerBase:
     """ Create a provisioner from some config
 
     This method will interpret some config values as being usable to build a
@@ -159,7 +166,11 @@ def new_provisioner_from_config(config: Config, label: str = UCTT_PROVISIONER_CO
     label (str) : config label to load to pull provisioner configuration. That
         label is loaded and config is pulled to produce a list of provisioners
 
-    base (str) : config key to get a Dict of provisioners configurations.
+    base (str|List) : config key to get a Dict of plugin configuration.
+        A list of strings is valid as configerus.loaded.get() can take that as
+        an argument.
+        We call this base instead of key as we will be searching for sub-paths
+        to pull individual elements
 
     instance_id (str) : optionally force a particular instance_id to be assigned
 
@@ -177,8 +188,9 @@ def new_provisioner_from_config(config: Config, label: str = UCTT_PROVISIONER_CO
     the module that contains the factory method with a decorator.
 
     """
-    logger.debug("Creating provisioner: [{}]:[{}][{}]".format(
-        label, base, instance_id))
+    logger.debug(
+        "Creating provisioner: [{}]:[{}][{}]".format(
+            label, base, instance_id))
     return new_plugin_from_config(
         config=config, type=Type.PROVISIONER, label=label, base=base)
 
@@ -269,19 +281,10 @@ def new_provisioner(config: Config, plugin_id: str,
 
 """ CLIENT CONSTRUCTION """
 
-UCTT_CLIENTS_CONFIG_LABEL = 'clients'
-""" clients_from_config will load this config to decide how to build client plugins """
-UCTT_CLIENTS_CONFIG_KEY_CLIENTS = '.'
-""" default loaded config get key for clients in UCTT_CLIENTS_CONFIG_LABEL """
-UCTT_CLIENT_CONFIG_LABEL = 'client'
-""" default config label which should define a single client """
-UCTT_CLIENT_CONFIG_KEY_CLIENT = '.'
-""" default loaded config get key for client settings in UCTT_CLIENT_CONFIG_LABEL """
-
 
 def new_clients_from_config(config: Config,
-                            label: str = UCTT_CLIENTS_CONFIG_LABEL,
-                            base: str = UCTT_CLIENTS_CONFIG_KEY_CLIENTS) -> PluginInstances:
+                            label: str = UCTT_CLIENT_CONFIG_CLIENTS_LABEL,
+                            base: Any = LOADED_KEY_ROOT) -> PluginInstances:
     """ Create clients from some config
 
     This method will interpret some config values as being usable to build
@@ -295,7 +298,11 @@ def new_clients_from_config(config: Config,
     label (str) : config label to load to pull client configuration. That
         label is loaded and config is pulled to produce a list of clients
 
-    base (str) : config key to get a Dict of clients configurations.
+    base (str|List) : config key to get a Dict of plugins configurations.
+        A list of strings is valid as configerus.loaded.get() can take that as
+        an argument.
+        We call this base instead of key as we will be searching for sub-paths
+        to pull individual elements
 
     Returns:
     --------
@@ -316,8 +323,8 @@ def new_clients_from_config(config: Config,
 
 
 def new_client_from_config(config: Config,
-                           label: str = UCTT_CLIENT_CONFIG_LABEL,
-                           base: str = UCTT_CLIENT_CONFIG_KEY_CLIENT) -> ClientBase:
+                           label: str = UCTT_CLIENT_CONFIG_CLIENT_LABEL,
+                           base: Any = LOADED_KEY_ROOT) -> ClientBase:
     """ Create a client from some config
 
     This method will interpret some config values as being usable to build a
@@ -331,7 +338,11 @@ def new_client_from_config(config: Config,
     label (str) : config label to load to pull client configuration. That
         label is loaded and config is pulled to produce a list of clients
 
-    base (str) : config key to get a Dict of clients configurations.
+    base (str|List) : config key to get a Dict of plugin configuration.
+        A list of strings is valid as configerus.loaded.get() can take that as
+        an argument.
+        We call this base instead of key as we will be searching for sub-paths
+        to pull individual elements
 
     Returns:
     --------
@@ -432,353 +443,12 @@ def new_client(config: Config, plugin_id: str, instance_id: str) -> ClientBase:
                       plugin_id=plugin_id, instance_id=instance_id)
 
 
-""" WORKLOAD CONSTRUCTION """
-
-UCTT_WORKLOADS_CONFIG_LABEL = 'workloads'
-""" workloads_from_config will load this config to decide how to build workload plugins """
-UCTT_WORKLOADS_CONFIG_KEY_WORKLOADS = '.'
-""" default loaded config get key for workloads in UCTT_WORKLOADS_CONFIG_LABEL """
-UCTT_WORKLOAD_CONFIG_LABEL = 'workload'
-""" default config label which should define a single workload """
-UCTT_WORKLOAD_CONFIG_KEY_WORKLOAD = '.'
-""" default loaded config get key for workload settings in UCTT_WORKLOAD_CONFIG_LABEL """
-
-
-def new_workloads_from_config(config: Config,
-                              label: str = UCTT_WORKLOADS_CONFIG_LABEL,
-                              base: str = UCTT_WORKLOADS_CONFIG_KEY_WORKLOADS) -> PluginInstances:
-    """ Create workloads from some config
-
-    This method will interpret some config values as being usable to build
-    a PluginInstances set of workload plugins
-
-    Parameters:
-    -----------
-
-    config (Config) : Used to load and get the workload configuration
-
-    label (str) : config label to load to pull workload configuration. That
-        label is loaded and config is pulled to produce a list of workloads
-
-    base (str) : config key to get a Dict of workloads configurations.
-
-    Returns:
-    --------
-
-    PluginInstances of workload plugins
-
-    Raises:
-    -------
-
-    If you ask for a plugin which has not been registered, then you're going to
-    get a NotImplementedError exception.
-    To make sure that your desired plugin is registered, make sure to import
-    the module that contains the factory method with a decorator.
-
-    """
-    return new_plugins_from_config(
-        config=config, type=Type.WORKLOAD, label=label, base=base)
-
-
-def new_workload_from_config(config: Config,
-                             label: str = UCTT_WORKLOAD_CONFIG_LABEL,
-                             base: str = UCTT_WORKLOAD_CONFIG_KEY_WORKLOAD) -> WorkloadBase:
-    """ Create a workload from some config
-
-    This method will interpret some config values as being usable to build
-    workload
-
-    Parameters:
-    -----------
-
-    config (Config) : Used to load and get the workload configuration
-
-    label (str) : config label to load to pull workload configuration. That
-        label is loaded and config is pulled to produce a list of workloads
-
-    base (str) : config key to get a Dict of workloads configurations.
-
-    Returns:
-    --------
-
-    workload plugin (WorkloadBase)
-
-    Raises:
-    -------
-
-    If you ask for a plugin which has not been registered, then you're going to
-    get a NotImplementedError exception.
-    To make sure that your desired plugin is registered, make sure to import
-    the module that contains the factory method with a decorator.
-
-    """
-    return new_plugin_from_config(
-        config=config, type=Type.WORKLOAD, label=label, base=base)
-
-
-def new_workloads_from_dict(
-        config: Config, workload_list: Dict[str, Dict]) -> PluginInstances:
-    """ Create a set of workload plugins from Dict information
-
-    The passed dict should be a key=>details map of workloads, which will be turned
-    into a PluginInstances map of plugins that can be used to interact with the
-    objects.
-
-    Parameters:
-    -----------
-
-    config (Config) : configerus.Config object passed to each generated plugins.
-
-    workload_list (Dict[str, Dict]) : map of key=> config dicts, where each dict
-        contains all of the information that is needed to build the plugin.
-
-        for details, @see new_plugins_from_dict
-
-    Returns:
-    --------
-
-    A PluginsInstances object with the plugin objects created
-
-    """
-    return new_plugins_from_dict(
-        config=config, type=Type.WORKLOAD, plugin_list=workload_list)
-
-
-def new_workload_from_dict(
-        config: Config, workload_dict: Dict[str, Any]) -> WorkloadBase:
-    """ Create a single workload plugin from a Dict of information for it
-
-    Create a new workload plugin from a map/dict of settings for the needed parameters.
-
-    Parameters:
-    -----------
-
-    config (Config) : configerus.Config object passed to each generated plugins.
-
-    workload_dict (Dict[str,Any]) : Dict from which all needed information will
-        be pulled.  Optionally additional config sources can be included as well
-        as arguments which could be passed to the plugin.
-
-        @see new_plugin_from_dict for more details.
-
-    Return:
-    -------
-
-    A plugin object (WorkloadBase)
-
-    """
-    return new_plugin_from_dict(
-        config=config, type=Type.WORKLOAD, plugin_dict=workload_dict)
-
-
-def new_workload(config: Config, plugin_id: str,
-                 instance_id: str) -> WorkloadBase:
-    """ Create a new workload from parameters
-
-    Parameters:
-    -----------
-
-    config (Config) : configerus.Config object passed to each generated plugins.
-
-    plugin_id (str) : UCTT plugin id for the workload type, to tell us what plugin
-        factory to load.
-
-        @see .plugin.Factory for more details on how plugins are loaded.
-
-    instance_id (str) : string instance id that will be passed to the new plugin
-        object.
-
-    Return:
-    -------
-
-    A plugin object (WorkloadBase)
-
-    """
-    return new_plugin(config=config, type=Type.WORKLOAD,
-                      plugin_id=plugin_id, instance_id=instance_id)
-
-
-""" WORKLOAD CONSTRUCTION """
-
-UCTT_WORKLOADS_CONFIG_LABEL = 'workloads'
-""" workloads_from_config will load this config to decide how to build workload plugins """
-UCTT_WORKLOADS_CONFIG_KEY_WORKLOADS = '.'
-""" default loaded config get key for workloads in UCTT_WORKLOADS_CONFIG_LABEL """
-UCTT_WORKLOAD_CONFIG_LABEL = 'workload'
-""" default config label which should define a single workload """
-UCTT_WORKLOAD_CONFIG_KEY_WORKLOAD = '.'
-""" default loaded config get key for workload settings in UCTT_WORKLOAD_CONFIG_LABEL """
-
-
-def new_workloads_from_config(config: Config,
-                              label: str = UCTT_WORKLOADS_CONFIG_LABEL,
-                              base: str = UCTT_WORKLOADS_CONFIG_KEY_WORKLOADS) -> PluginInstances:
-    """ Create workloads from some config
-
-    This method will interpret some config values as being usable to build
-    a PluginInstances set of workload plugins
-
-    Parameters:
-    -----------
-
-    config (Config) : Used to load and get the workload configuration
-
-    label (str) : config label to load to pull workload configuration. That
-        label is loaded and config is pulled to produce a list of workloads
-
-    base (str) : config key to get a Dict of workloads configurations.
-
-    Returns:
-    --------
-
-    PluginInstances of workload plugins
-
-    Raises:
-    -------
-
-    If you ask for a plugin which has not been registered, then you're going to
-    get a NotImplementedError exception.
-    To make sure that your desired plugin is registered, make sure to import
-    the module that contains the factory method with a decorator.
-
-    """
-    return new_plugins_from_config(
-        config=config, type=Type.WORKLOAD, label=label, base=base)
-
-
-def new_workload_from_config(config: Config,
-                             label: str = UCTT_WORKLOAD_CONFIG_LABEL,
-                             base: str = UCTT_WORKLOAD_CONFIG_KEY_WORKLOAD) -> WorkloadBase:
-    """ Create a workload from some config
-
-    This method will interpret some config values as being usable to build
-    workload
-
-    Parameters:
-    -----------
-
-    config (Config) : Used to load and get the workload configuration
-
-    label (str) : config label to load to pull workload configuration. That
-        label is loaded and config is pulled to produce a list of workloads
-
-    base (str) : config key to get a Dict of workloads configurations.
-
-    Returns:
-    --------
-
-    workload plugin (WorkloadBase)
-
-    Raises:
-    -------
-
-    If you ask for a plugin which has not been registered, then you're going to
-    get a NotImplementedError exception.
-    To make sure that your desired plugin is registered, make sure to import
-    the module that contains the factory method with a decorator.
-
-    """
-    return new_plugin_from_config(
-        config=config, type=Type.WORKLOAD, label=label, base=base)
-
-
-def new_workloads_from_dict(
-        config: Config, workload_list: Dict[str, Dict]) -> PluginInstances:
-    """ Create a set of workload plugins from Dict information
-
-    The passed dict should be a key=>details map of workloads, which will be turned
-    into a PluginInstances map of plugins that can be used to interact with the
-    objects.
-
-    Parameters:
-    -----------
-
-    config (Config) : configerus.Config object passed to each generated plugins.
-
-    workload_list (Dict[str, Dict]) : map of key=> config dicts, where each dict
-        contains all of the information that is needed to build the plugin.
-
-        for details, @see new_plugins_from_dict
-
-    Returns:
-    --------
-
-    A PluginsInstances object with the plugin objects created
-
-    """
-    return new_plugins_from_dict(
-        config=config, type=Type.WORKLOAD, plugin_list=workload_list)
-
-
-def new_workload_from_dict(
-        config: Config, workload_dict: Dict[str, Any]) -> WorkloadBase:
-    """ Create a single workload plugin from a Dict of information for it
-
-    Create a new workload plugin from a map/dict of settings for the needed parameters.
-
-    Parameters:
-    -----------
-
-    config (Config) : configerus.Config object passed to each generated plugins.
-
-    workload_dict (Dict[str,Any]) : Dict from which all needed information will
-        be pulled.  Optionally additional config sources can be included as well
-        as arguments which could be passed to the plugin.
-
-        @see new_plugin_from_dict for more details.
-
-    Return:
-    -------
-
-    A plugin object (WorkloadBase)
-
-    """
-    return new_plugin_from_dict(
-        config=config, type=Type.WORKLOAD, plugin_dict=workload_dict)
-
-
-def new_workload(config: Config, plugin_id: str,
-                 instance_id: str) -> WorkloadBase:
-    """ Create a new workload from parameters
-
-    Parameters:
-    -----------
-
-    config (Config) : configerus.Config object passed to each generated plugins.
-
-    plugin_id (str) : UCTT plugin id for the workload type, to tell us what plugin
-        factory to load.
-
-        @see .plugin.Factory for more details on how plugins are loaded.
-
-    instance_id (str) : string instance id that will be passed to the new plugin
-        object.
-
-    Return:
-    -------
-
-    A plugin object (WorkloadBase)
-
-    """
-    return new_plugin(config=config, type=Type.WORKLOAD,
-                      plugin_id=plugin_id, instance_id=instance_id)
-
-
 """ OUTPUT CONSTRUCTION """
-
-UCTT_OUTPUTS_CONFIG_LABEL = 'outputs'
-""" outputs_from_config will load this config to decide how to build output plugins """
-UCTT_OUTPUTS_CONFIG_KEY_OUTPUTS = '.'
-""" default loaded config get key for outputs in UCTT_OUTPUTS_CONFIG_LABEL """
-UCTT_OUTPUT_CONFIG_LABEL = 'output'
-""" default config label which should define a single output """
-UCTT_OUTPUT_CONFIG_KEY_OUTPUT = '.'
-""" default loaded config get key for output settings in UCTT_OUTPUT_CONFIG_LABEL """
 
 
 def new_outputs_from_config(config: Config,
-                            label: str = UCTT_OUTPUTS_CONFIG_LABEL,
-                            base: str = UCTT_OUTPUTS_CONFIG_KEY_OUTPUTS) -> PluginInstances:
+                            label: str = UCTT_OUTPUT_CONFIG_OUTPUTS_LABEL,
+                            base: Any = LOADED_KEY_ROOT) -> PluginInstances:
     """ Create outputs from some config
 
     This method will interpret some config values as being usable to build
@@ -792,7 +462,11 @@ def new_outputs_from_config(config: Config,
     label (str) : config label to load to pull output configuration. That
         label is loaded and config is pulled to produce a list of outputs
 
-    base (str) : config key to get a Dict of output configurations.
+    base (str|List) : config key to get a Dict of plugins configurations.
+        A list of strings is valid as configerus.loaded.get() can take that as
+        an argument.
+        We call this base instead of key as we will be searching for sub-paths
+        to pull individual elements
 
     Returns:
     --------
@@ -813,8 +487,8 @@ def new_outputs_from_config(config: Config,
 
 
 def new_output_from_config(config: Config,
-                           label: str = UCTT_OUTPUT_CONFIG_LABEL,
-                           base: str = UCTT_OUTPUT_CONFIG_KEY_OUTPUT) -> OutputBase:
+                           label: str = UCTT_OUTPUT_CONFIG_OUTPUT_LABEL,
+                           base: Any = LOADED_KEY_ROOT) -> OutputBase:
     """ Create a output from some config
 
     This method will interpret some config values as being usable to build
@@ -828,7 +502,11 @@ def new_output_from_config(config: Config,
     label (str) : config label to load to pull output configuration. That
         label is loaded and config is pulled to produce a list of outputs
 
-    base (str) : config key to get a Dict of output configurations.
+    base (str|List) : config key to get a Dict of plugins configurations.
+        A list of strings is valid as configerus.loaded.get() can take that as
+        an argument.
+        We call this base instead of key as we will be searching for sub-paths
+        to pull individual elements
 
     Returns:
     --------
@@ -927,4 +605,169 @@ def new_output(config: Config, plugin_id: str,
 
     """
     return new_plugin(config=config, type=Type.OUTPUT,
+                      plugin_id=plugin_id, instance_id=instance_id)
+
+
+""" WORKLOAD CONSTRUCTION """
+
+
+def new_workloads_from_config(config: Config,
+                              label: str = UCTT_WORKLOAD_CONFIG_WORKLOADS_LABEL,
+                              base: Any = LOADED_KEY_ROOT) -> PluginInstances:
+    """ Create workloads from some config
+
+    This method will interpret some config values as being usable to build
+    a PluginInstances set of workload plugins
+
+    Parameters:
+    -----------
+
+    config (Config) : Used to load and get the workload configuration
+
+    label (str) : config label to load to pull workload configuration. That
+        label is loaded and config is pulled to produce a list of workloads
+
+    base (str|List) : config key to get a Dict of plugins configurations.
+        A list of strings is valid as configerus.loaded.get() can take that as
+        an argument.
+        We call this base instead of key as we will be searching for sub-paths
+        to pull individual elements
+
+    Returns:
+    --------
+
+    PluginInstances of workload plugins
+
+    Raises:
+    -------
+
+    If you ask for a plugin which has not been registered, then you're going to
+    get a NotImplementedError exception.
+    To make sure that your desired plugin is registered, make sure to import
+    the module that contains the factory method with a decorator.
+
+    """
+    return new_plugins_from_config(
+        config=config, type=Type.WORKLOAD, label=label, base=base)
+
+
+def new_workload_from_config(config: Config,
+                             label: str = UCTT_WORKLOAD_CONFIG_WORKLOAD_LABEL,
+                             base: Any = LOADED_KEY_ROOT) -> WorkloadBase:
+    """ Create a workload from some config
+
+    This method will interpret some config values as being usable to build
+    workload
+
+    Parameters:
+    -----------
+
+    config (Config) : Used to load and get the workload configuration
+
+    label (str) : config label to load to pull workload configuration. That
+        label is loaded and config is pulled to produce a list of workloads
+
+    base (str|List) : config key to get a Dict of plugin configuration.
+        A list of strings is valid as configerus.loaded.get() can take that as
+        an argument.
+        We call this base instead of key as we will be searching for sub-paths
+        to pull individual elements
+
+    Returns:
+    --------
+
+    workload plugin (WorkloadBase)
+
+    Raises:
+    -------
+
+    If you ask for a plugin which has not been registered, then you're going to
+    get a NotImplementedError exception.
+    To make sure that your desired plugin is registered, make sure to import
+    the module that contains the factory method with a decorator.
+
+    """
+    return new_plugin_from_config(
+        config=config, type=Type.WORKLOAD, label=label, base=base)
+
+
+def new_workloads_from_dict(
+        config: Config, workload_list: Dict[str, Dict]) -> PluginInstances:
+    """ Create a set of workload plugins from Dict information
+
+    The passed dict should be a key=>details map of workloads, which will be turned
+    into a PluginInstances map of plugins that can be used to interact with the
+    objects.
+
+    Parameters:
+    -----------
+
+    config (Config) : configerus.Config object passed to each generated plugins.
+
+    workload_list (Dict[str, Dict]) : map of key=> config dicts, where each dict
+        contains all of the information that is needed to build the plugin.
+
+        for details, @see new_plugins_from_dict
+
+    Returns:
+    --------
+
+    A PluginsInstances object with the plugin objects created
+
+    """
+    return new_plugins_from_dict(
+        config=config, type=Type.WORKLOAD, plugin_list=workload_list)
+
+
+def new_workload_from_dict(
+        config: Config, workload_dict: Dict[str, Any]) -> WorkloadBase:
+    """ Create a single workload plugin from a Dict of information for it
+
+    Create a new workload plugin from a map/dict of settings for the needed parameters.
+
+    Parameters:
+    -----------
+
+    config (Config) : configerus.Config object passed to each generated plugins.
+
+    workload_dict (Dict[str,Any]) : Dict from which all needed information will
+        be pulled.  Optionally additional config sources can be included as well
+        as arguments which could be passed to the plugin.
+
+        @see new_plugin_from_dict for more details.
+
+    Return:
+    -------
+
+    A plugin object (WorkloadBase)
+
+    """
+    return new_plugin_from_dict(
+        config=config, type=Type.WORKLOAD, plugin_dict=workload_dict)
+
+
+def new_workload(config: Config, plugin_id: str,
+                 instance_id: str) -> WorkloadBase:
+    """ Create a new workload from parameters
+
+    Parameters:
+    -----------
+
+    config (Config) : configerus.Config object passed to each generated plugins.
+
+    plugin_id (str) : UCTT plugin id for the workload type, to tell us what plugin
+        factory to load.
+
+        @see .plugin.Factory for more details on how plugins are loaded.
+
+    instance_id (str) : string instance id that will be passed to the new plugin
+        object.
+
+    Return:
+    -------
+
+    A plugin object (WorkloadBase)
+
+    """
+    return new_plugin(config=config, type=Type.WORKLOAD,
                       plugin_id=plugin_id, instance_id=instance_id)

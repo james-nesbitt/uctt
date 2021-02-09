@@ -9,11 +9,13 @@ logger = logging.getLogger('uctt.workload')
 UCTT_PLUGIN_ID_WORKLOAD = Type.WORKLOAD
 """ Fast access to the workload type """
 
-UCTT_OUTPUT_CONFIG_WORKLOADS_LABEL = 'workloads'
+UCTT_WORKLOAD_CONFIG_WORKLOADS_LABEL = 'workloads'
 """ A centralized configerus load label for multiple workloads """
-UCTT_OUTPUT_CONFIG_WORKLOADS_KEY = 'workloads'
+UCTT_WORKLOAD_CONFIG_WORKLOAD_LABEL = 'workload'
+""" A centralized configerus load label for a workload """
+UCTT_WORKLOAD_CONFIG_WORKLOADS_KEY = 'workloads'
 """ A centralized configerus key for multiple workloads """
-UCTT_OUTPUT_CONFIG_WORKLOAD_KEY = 'workload'
+UCTT_WORKLOAD_CONFIG_WORKLOAD_KEY = 'workload'
 """ A centralized configerus key for one workload """
 
 
