@@ -15,12 +15,18 @@ from importlib import metadata
 from typing import Dict, List, Any
 import logging
 
+from configerus import new_config as configerus_new_config
 from configerus.config import Config
 from configerus.loaded import LOADED_KEY_ROOT
 
 from .plugin import Type
 from .instances import PluginInstances
-from .constructors import new_plugins_from_config, new_plugins_from_dict, new_plugin_from_config, new_plugin_from_dict, new_plugin
+from .constructors import (
+    new_plugins_from_config,
+    new_plugins_from_dict,
+    new_plugin_from_config,
+    new_plugin_from_dict,
+    new_plugin)
 from .provisioner import (
     ProvisionerBase,
     UCTT_PROVISIONER_CONFIG_PROVISIONERS_LABEL,
@@ -104,6 +110,62 @@ def bootstrap(config: Config, bootstraps=[]):
                 "Bootstrap not found {}:{}".format(
                     UCTT_BOOTSTRAP_ENTRYPOINT,
                     bootstrap_id))
+
+
+""" Configerus construction with bootstrapping """
+
+FIXED_CONFIGERUS_BOOSTRAPS = [
+    "deep",
+    "get",
+    "jsonschema",
+    "files"
+]
+""" configerus bootstraps that we will use on config objects """
+FIXED_UCTT_BOOTSTRAPS = [
+    "uctt_docker",
+    "uctt_kubernetes",
+    "uctt_terraform"
+]
+DEFAULT_ADDITIONAL_UCTT_BOOTSTRAPS = [
+    'mtt'
+]
+""" default overridable uctt bootstrap calls """
+
+
+def new_config(additional_uctt_bootstraps: List[str] = DEFAULT_ADDITIONAL_UCTT_BOOTSTRAPS,
+               additional_configerus_bootstraps: List[str] = []):
+    """ Retrieve a new empty configerus_Config object
+
+    This method is just a shortcut into the configerus construction, to allow
+    simpler import approachs for mtt consumers.
+    You don`t need to use this if you are comfortable using configerus directly
+    but this allows a simple approach.
+
+    Parameters
+    ----------
+
+    additional_uctt_bootstraps (List[str]) : run additiional uctt bootstraps
+        on the config object.  Defaults to the mtt bootstrap.
+
+    additional_configerus_bootstraps (List[str]) : run additional configerus
+        bootstrap entry_points
+
+    Returns:
+    --------
+
+    An empty configerus.config.Config object, bootstrapped with mtt preferred
+    bootstraps.
+
+    """
+    configerus_bootstraps_unique = list(
+        set(FIXED_CONFIGERUS_BOOSTRAPS + additional_configerus_bootstraps))
+    config = configerus_new_config(bootstraps=configerus_bootstraps_unique)
+
+    uctt_bootstraps_unique = list(
+        set(FIXED_UCTT_BOOTSTRAPS + additional_uctt_bootstraps))
+    bootstrap(config, uctt_bootstraps_unique)
+
+    return config
 
 
 """ PROVISIONER CONSTRUCTION """
