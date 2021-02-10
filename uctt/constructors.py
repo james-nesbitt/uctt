@@ -115,20 +115,12 @@ def new_plugins_from_config(config: Config, label: str, base: Any = LOADED_KEY_R
         else:
             return instances
 
-    # we are going to be pasing key lists to configerus for this instance
-    # so make sure that we have the list key type.
-    if not isinstance(base, list):
-        base = [base]
-
     for instance_id in plugin_list.keys():
-        # configerus loaded .get() key path for the instance
-        instance_base = base.copy()
-        instance_base.append(instance_id)
 
         new_plugin_from_config(
             config=config,
             label=label,
-            base=instance_base,
+            base=[base, instance_id],
             type=type,
             instance_id=instance_id,
             validator=validator,
@@ -248,15 +240,12 @@ def new_plugin_from_config(config: Config, label: str, base: Any = LOADED_KEY_RO
     """
     logger.debug('Create plugin [{}][{}]'.format(type, instance_id))
 
-    if not isinstance(base, list):
-        base = [base]
-
     config_plugin = config.load(label)
     """ loaded configuration for the plugin """
 
     validators = []
     config_validators = config_plugin.get(
-        base + [UCTT_PLUGIN_CONFIG_KEY_VALIDATORS])
+        [base, UCTT_PLUGIN_CONFIG_KEY_VALIDATORS])
     if config_validators:
         validators = config_validators
     if validator:
@@ -265,13 +254,13 @@ def new_plugin_from_config(config: Config, label: str, base: Any = LOADED_KEY_RO
         for validator in validators:
             config_plugin.get(base, validator=validator)
 
-    plugin_id = config_plugin.get(base + [UCTT_PLUGIN_CONFIG_KEY_PLUGINID])
+    plugin_id = config_plugin.get([base, UCTT_PLUGIN_CONFIG_KEY_PLUGINID])
     if not plugin_id:
         raise ValueError(
             "Could not find a plugin_id when trying to create a plugin:[{}][{}][{}] : {}".format(type, label, base, config_plugin.get(base)))
 
     if type is None:
-        type = config_plugin.get(base + [UCTT_PLUGIN_CONFIG_KEY_TYPE])
+        type = config_plugin.get([base, UCTT_PLUGIN_CONFIG_KEY_TYPE])
     if not type:
         raise ValueError(
             "Could not find a plugin type when trying to create a plugin:[{}][{}][{}] : {}".format(type, label, base, config_plugin.get(base)))
@@ -279,7 +268,7 @@ def new_plugin_from_config(config: Config, label: str, base: Any = LOADED_KEY_RO
     # if no instance_id was passed, try to load one or just make one up
     if not instance_id:
         instance_id = config_plugin.get(
-            base + [UCTT_PLUGIN_CONFIG_KEY_INSTANCEID])
+            [base, UCTT_PLUGIN_CONFIG_KEY_INSTANCEID])
         if not instance_id:
             instance_id = '{}-{}'.format(type, plugin_id)
 
@@ -289,7 +278,7 @@ def new_plugin_from_config(config: Config, label: str, base: Any = LOADED_KEY_RO
         # If we were given a output config, then create a copy of the config
         # object and add the passed config as new sources to the copy
         plugin_config_dict = config_plugin.get(
-            base + [UCTT_PLUGIN_CONFIG_KEY_CONFIG])
+            [base, UCTT_PLUGIN_CONFIG_KEY_CONFIG])
         if plugin_config_dict:
             config = config.copy()
             # Add a dict source plugin for the passed 'config', giving it source id
@@ -310,15 +299,14 @@ def new_plugin_from_config(config: Config, label: str, base: Any = LOADED_KEY_RO
     else:
         # We are creating an instance, so we can look for a priority
 
-        priority = config_plugin.get(
-            base + [UCTT_PLUGIN_CONFIG_KEY_INSTANCEID])
+        priority = config_plugin.get([base, UCTT_PLUGIN_CONFIG_KEY_INSTANCEID])
         if not priority:
             priority = config.default_priority()
             """ instance priority - this is actually a stupid place to get it from """
 
         # we can't pass config if creating the plugin as an instance in an instance list
         # as that structure needs tight control over config for copying etc.
-        if config_plugin.get(base + [UCTT_PLUGIN_CONFIG_KEY_CONFIG]):
+        if config_plugin.get([base, UCTT_PLUGIN_CONFIG_KEY_CONFIG]):
             logger.warn(
                 'Creating a plugin for an instance list, but was given config overrides.  Ignoring it as this is not possible.')
 
@@ -330,9 +318,14 @@ def new_plugin_from_config(config: Config, label: str, base: Any = LOADED_KEY_RO
 
     if hasattr(plugin, 'arguments') and callable(getattr(plugin, 'arguments')):
         plugin_args = config_plugin.get(
-            base + [UCTT_PLUGIN_CONFIG_KEY_ARGUMENTS])
+            [base, UCTT_PLUGIN_CONFIG_KEY_ARGUMENTS])
         if plugin_args:
-            plugin.arguments(**plugin_args)
+            try:
+                plugin.arguments(**plugin_args)
+            except TypeError as e:
+                raise TypeError(
+                    "Created plugin did not like the passed arguments ({}:{}) : {}".format(
+                        type, plugin_id, plugin_args))
 
     return plugin
 

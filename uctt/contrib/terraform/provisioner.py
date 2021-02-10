@@ -8,7 +8,7 @@ import logging
 import json
 import os
 import subprocess
-from typing import Dict, List
+from typing import Dict, List, Any
 
 from configerus.loaded import LOADED_KEY_ROOT
 import uctt
@@ -74,7 +74,7 @@ class TerraformProvisionerPlugin(ProvisionerBase):
     """
 
     def prepare(self, label: str = TERRAFORM_PROVISIONER_CONFIG_LABEL,
-                base: str = LOADED_KEY_ROOT):
+                base: Any = LOADED_KEY_ROOT):
         """
 
         Interpret provided config and configure the object with all of the needed
@@ -84,6 +84,11 @@ class TerraformProvisionerPlugin(ProvisionerBase):
 
         logger.info("Preparing Terraform setting")
 
+        # we are going to do configerus key merging, so keep the
+        # base as a dict instead of a string
+        if not isinstance(base, dict):
+            base = [base]
+
         self.terraform_config_label = label
         """ configerus load label that should contain all of the config """
         self.terraform_config_base = base
@@ -91,35 +96,29 @@ class TerraformProvisionerPlugin(ProvisionerBase):
         self.terraform_config = self.config.load(self.terraform_config_label)
         """ get a configerus LoadedConfig for the terraform label """
 
-        self.working_dir = self.terraform_config.get(
-            TERRAFORM_PROVISIONER_CONFIG_PLAN_PATH_KEY,
-            base=self.terraform_config_base)
+        self.working_dir = self.terraform_config.get([self.terraform_config_base, TERRAFORM_PROVISIONER_CONFIG_PLAN_PATH_KEY],
+                                                     exception_if_missing=False)
         """ all subprocess commands for terraform will be run in this path """
         if not self.working_dir:
             raise ValueError(
                 "Plugin config did not give us a working/plan path: {}".format(self.terraform_config.data))
 
-        state_path = self.terraform_config.get(
-            TERRAFORM_PROVISIONER_CONFIG_STATE_PATH_KEY,
-            base=self.terraform_config_base,
-            exception_if_missing=False)
+        state_path = self.terraform_config.get([self.terraform_config_base, TERRAFORM_PROVISIONER_CONFIG_STATE_PATH_KEY],
+                                               exception_if_missing=False)
         """ terraform state path """
         if not state_path:
             state_path = os.path.join(
                 self.working_dir,
                 TERRAFORM_PROVISIONER_DEFAULT_STATE_SUBPATH)
 
-        self.vars = self.terraform_config.get(
-            TERRAFORM_PROVISIONER_CONFIG_VARS_KEY,
-            base=self.terraform_config_base)
+        self.vars = self.terraform_config.get([self.terraform_config_base, TERRAFORM_PROVISIONER_CONFIG_VARS_KEY],
+                                              exception_if_missing=False)
         """ List of vars to pass to terraform.  Will be written to a file """
         if not self.vars:
             self.vars = {}
 
-        vars_path = self.terraform_config.get(
-            TERRAFORM_PROVISIONER_CONFIG_VARS_PATH_KEY,
-            base=self.terraform_config_base,
-            exception_if_missing=False)
+        vars_path = self.terraform_config.get([self.terraform_config_base, TERRAFORM_PROVISIONER_CONFIG_VARS_PATH_KEY],
+                                              exception_if_missing=False)
         """ vars file containing vars which will be written before running terraform """
         if not vars_path:
             vars_path = os.path.join(
@@ -166,8 +165,9 @@ class TerraformProvisionerPlugin(ProvisionerBase):
                    exception_if_missing: bool = True) -> OutputBase:
         """ retrieve an output from the provisioner """
         outputs = self.get_outputs()
-        return outputs.get_plugin(
+        output = outputs.get_plugin(
             type=UCTT_PLUGIN_TYPE_OUTPUT, plugin_id=plugin_id, instance_id=instance_id)
+        return output
 
     def get_client(self, plugin_id: str = '', instance_id: str = '',
                    exception_if_missing: bool = True):
@@ -178,22 +178,37 @@ class TerraformProvisionerPlugin(ProvisionerBase):
     def get_outputs(self) -> PluginInstances:
         """ retrieve an output from terraform
 
-        For other UCTT plugins we can just load configuration, but for output we
-        also want to check of any outputs defined in the terraform root module.
-        If we find a root module without a matching config output defintition
-        then we make some assumptions about plugin type and add it to the list.
+        For other UCTT plugins we can just load configuration, and creating
+        output plugin instances from various value in config.
+
+        We do that here, but  we also want to check of any outputs exported by
+        the terraform root module, which we get using the tf client.
+
+        If we find a root module output without a matching config output
+        defintition then we make some assumptions about plugin type and add it
+        to the list. We make some simple investigation into output plugin types
+        and pick either the contrib.common.dict or contrib.common.text plugins.
+
+        If we find a root module output that matches an output that was declared
+        in config then we use that.  This allows config to define a plugin_id
+        which will then be populated automatically.  If you know what type of
+        data you are expecting from a particular tf output then you can prepare
+        and config for it to do things like setting default values.
+
+        Priorities can be used in the config.
+
+        Returns:
+        --------
+
+        A PluginInstances set of plugins as instances.
 
         """
-
         # First make a set of output plugins config told us about (may be
         # empty)
-        outputs_key = '{}.{}'.format(
-            self.terraform_config_base,
-            TERRAFORM_PROVISIONER_CONFIG_OUTPUTS_KEY) if not self.terraform_config_base == LOADED_KEY_ROOT else TERRAFORM_PROVISIONER_CONFIG_OUTPUTS_KEY
         outputs = uctt.new_outputs_from_config(
             config=self.config,
             label=self.terraform_config_label,
-            base=outputs_key)
+            base=[self.terraform_config_base, TERRAFORM_PROVISIONER_CONFIG_OUTPUTS_KEY])
 
         # now we ask TF what output it nows about and merge together those as
         # new output plugins.
@@ -207,37 +222,25 @@ class TerraformProvisionerPlugin(ProvisionerBase):
             output_value = output_struct['value']
 
             # see if we already have an output plugin for this name
-            output_instance = outputs.get_plugin(
+            plugin = outputs.get_plugin(
                 type=UCTT_PLUGIN_TYPE_OUTPUT,
                 instance_id=output_key,
                 exception_if_missing=False)
-            if not output_instance:
+            if not plugin:
                 if output_type == 'object':
                     plugin = outputs.add_plugin(
                         type=UCTT_PLUGIN_TYPE_OUTPUT,
                         plugin_id=UCTT_PLUGIN_ID_OUTPUT_DICT,
                         instance_id=output_key,
-                        priority=80)
+                        priority=self.config.default_priority())
                 else:
                     plugin = outputs.add_plugin(
                         type=UCTT_PLUGIN_TYPE_OUTPUT,
                         plugin_id=UCTT_PLUGIN_ID_OUTPUT_TEXT,
                         instance_id=output_key,
-                        priority=80)
+                        priority=self.config.default_priority())
 
-            if output_type == 'object':
-                plugin = outputs.add_plugin(
-                    type=UCTT_PLUGIN_TYPE_OUTPUT,
-                    plugin_id=UCTT_PLUGIN_ID_OUTPUT_DICT,
-                    instance_id=output_key,
-                    priority=80)
-                plugin.arguments(output_value)
-            else:
-                plugin = outputs.add_plugin(
-                    type=UCTT_PLUGIN_TYPE_OUTPUT,
-                    plugin_id=UCTT_PLUGIN_ID_OUTPUT_TEXT,
-                    instance_id=output_key,
-                    priority=80)
+            plugin.arguments(output_value)
 
         return outputs
 
@@ -248,6 +251,19 @@ class TerraformClient:
     def __init__(self, working_dir: str, state_path: str,
                  vars_path: str, variables: Dict[str, str]):
         """
+
+        Parameters:
+        -----------
+
+        working_dir (str) : string path to the python where the terraform root
+            module/plan is, so that subprocess/tf can use that as a pwd
+
+        state_path (str) : path to where the terraform state should be kept
+
+        vars_path (str) : string path to where the vars file should be written.
+
+        variables (Dict[str,str]) : terraform variables dict which will be
+            written to a vars file.
 
         """
         self.vars = variables
