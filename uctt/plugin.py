@@ -51,16 +51,18 @@ class UCCTArgumentsPlugin(UCTTPlugin):
 @unique
 class Type(Enum):
     """ Enumerator to match plugin types to plugin labels """
-    CLIENT = 'mirantis.testing.toolbox.plugin.client'
+    CLIENT = 'uctt.plugin.client'
     """ Plugins which interact with clusters """
-    SOURCE = 'mirantis.testing.toolbox.plugin.configsource'
+    SOURCE = 'uctt.plugin.configsource'
     """ A Config source handler """
-    OUTPUT = 'mirantis.testing.toolbox.plugin.output'
+    OUTPUT = 'uctt.plugin.output'
     """ A Config output handler """
-    PROVISIONER = 'mirantis.testing.toolbox.plugin.provisioner'
+    PROVISIONER = 'uctt.plugin.provisioner'
     """ A cluster provisioner plugin """
-    WORKLOAD = 'mirantis.testing.toolbox.plugin.workload'
+    WORKLOAD = 'uctt.plugin.workload'
     """ Plugins which use clients/provisioners to apply a workload to a cluster """
+    CLI = 'uctt.plugin.cli'
+    """ Plugins extend the uctt cli """
 
 
 class Factory():
