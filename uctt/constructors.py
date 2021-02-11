@@ -240,7 +240,10 @@ def new_plugin_from_config(config: Config, label: str, base: Any = LOADED_KEY_RO
     """
     logger.debug('Create plugin [{}][{}]'.format(type, instance_id))
 
-    config_plugin = config.load(label)
+    try:
+        config_plugin = config.load(label)
+    except KeyError as e:
+        raise KeyError("Could not load plugin config source.") from e
     """ loaded configuration for the plugin """
 
     validators = []
