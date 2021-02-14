@@ -10,115 +10,36 @@ The dummy provisioner is entirely config based.  Use the prepare() method to
 indicate an appropriate config source and the provisioner will do the rest. As
 long as you match its config convention it can take care of itself.
 
-Point it to some appropriate configuration and it will self-populate with
-the appropriate plugins:
-
-```
-'dummy_provisioner': {
-    'plugin_id': UCTT_PLUGIN_ID_DUMMY,
-    'clients': {
-        # configure a client of type dummy, with instance_id = one
-        'one': {
-            'plugin_id': 'dummy',
-            'arguments': {
-                'outputs': {
-                    'one': {
-                        'plugin_id': 'text',
-                        'arguments': {
-                            'text': "prov client one output one"
-                        }
-                    },
-                    'two': {
-                        'plugin_id': 'dict',
-                        'arguments': {
-                            'data': {
-                                '1': {
-                                    '1': "prov client one output two data one.one"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    },
-    'outputs': {
-        # configure one output of type text, with instance_id = dummy
-        'dummy': {
-            'plugin_id': 'text',
-            'arguments': {
-                'text': "prov dummy output one"
-            }
-        }
-    }
-}
-```
-
 """
 
 import logging
-from typing import Any
+from typing import Dict, Any
 
-from configerus.loaded import LOADED_KEY_ROOT
-import uctt
-from uctt.provisioner import ProvisionerBase
 from uctt.plugin import Type
-from uctt.output import UCTT_OUTPUT_CONFIG_OUTPUTS_KEY
-from uctt.client import UCTT_CLIENT_CONFIG_CLIENTS_KEY
+from uctt.environment import Environment
+from uctt.provisioner import ProvisionerBase, UCTT_PROVISIONER_CONFIG_PROVISIONER_LABEL
+
+from .base import DummyFixtures
 
 logger = logging.getLogger('uctt.contrib.dummy.provisioner')
 
-UCTT_DUMMY_PROVISIONER_CONFIG_LABEL = 'provisioner'
-""" What config label should be loaded to pull dummy clients and outputs """
-UCTT_DUMMY_PROVISIONER_CONFIG_KEY_OUTPUTS = UCTT_OUTPUT_CONFIG_OUTPUTS_KEY
-""" What config key should be loaded to pull dummy outputs """
-UCTT_DUMMY_PROVISIONER_CONFIG_KEY_CLIENTS = UCTT_CLIENT_CONFIG_CLIENTS_KEY
-""" What config key should be loaded to pull dummy clients """
 
-
-class DummyProvisionerPlugin(ProvisionerBase):
+class DummyProvisionerPlugin(DummyFixtures, ProvisionerBase):
     """ Dummy provisioner class """
 
-    def prepare(
-            self, label: str = UCTT_DUMMY_PROVISIONER_CONFIG_LABEL, base: Any = LOADED_KEY_ROOT):
-        """
-
-        Interpret provided config and configure the object with outputs and
-        clients based on config
-
-        """
-        logger.info("{}:execute: prepare()".format(self.instance_id))
-
-        self.clients = uctt.new_clients_from_config(
-            config=self.config,
-            label=label,
-            base=[base, UCTT_DUMMY_PROVISIONER_CONFIG_KEY_CLIENTS])
-        self.outputs = uctt.new_outputs_from_config(
-            config=self.config,
-            label=label,
-            base=[base, UCTT_DUMMY_PROVISIONER_CONFIG_KEY_OUTPUTS])
+    def __init__(self, environment: Environment, instance_id: str, fixtures: Dict[str, Dict[str, Any]] = {}):
+        """ Run the super constructor but also set class properties """
+        ProvisionerBase.__init__(self, environment, instance_id)
+        DummyFixtures.__init__(self, environment, fixtures)
 
     def apply(self):
         """ pretend to bring a cluster up """
         logger.info("{}:execute: apply()".format(self.instance_id))
 
+    def prepare(self):
+        """ pretend to prepare the cluster """
+        logger.info("{}:execute: prepare()".format(self.instance_id))
+
     def destroy(self):
         """ pretend to brind a cluster down """
         logger.info("{}:execute: destroy()".format(self.instance_id))
-
-    def get_output(self, instance_id: str):
-        """ Retrieve a dummy output """
-        logger.info("{}:execute: get_output()".format(self.instance_id))
-        if not self.outputs:
-            raise ValueError(
-                'No outputs have been added to the dummy provisioner')
-        return self.outputs.get_plugin(instance_id=instance_id)
-
-    def get_client(self, plugin_id: str = '', instance_id: str = ''):
-        """ Make a client as directed by the provisioner config """
-        logger.info("{}:execute: get_client()".format(self.instance_id))
-        if not self.clients:
-            raise ValueError(
-                'No clients have been added to the dummy provisioner')
-        return self.clients.get_plugin(
-            plugin_id=plugin_id, instance_id=instance_id)

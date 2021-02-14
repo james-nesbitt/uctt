@@ -11,10 +11,8 @@ class InfoCliPlugin(CliBase):
 
     """
 
-    def fire(self, fixtures: Dict[str, Any]):
+    def fire(self):
         """ return a dict of commands """
-        self._fixtures = fixtures
-
         return {
             'info': self.info
         }
@@ -28,7 +26,11 @@ class InfoCliPlugin(CliBase):
         info = """---  UCTT CLI INFO --- \n"""
 
         info += """-> FIXTURES \n"""
-        for (fixture_id, fixture) in self._fixtures.items():
-            info += "   {} : {} \n".format(fixture_id, fixture)
+
+        row_format = "{:<25}{:<20}{:<30}\n"
+        info += row_format.format('Type', 'Plugin ID', 'Instance ID')
+        for fixture in self.environment.fixtures.get_fixtures():
+            info += row_format.format(fixture.type.value,
+                                      fixture.plugin_id, fixture.instance_id)
 
         return info

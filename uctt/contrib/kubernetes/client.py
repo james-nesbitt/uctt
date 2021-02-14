@@ -61,8 +61,8 @@ class KubernetesClientPlugin(ClientBase):
 
     """
 
-    def arguments(self, kube_config_file: str):
-        """ set Kubernetes client args
+    def __init__(self, environment, instance_id, kube_config_file: str = ''):
+        """ Run the super constructor but also set class properties
 
         This implements the args part of the client interface.
 
@@ -76,6 +76,8 @@ class KubernetesClientPlugin(ClientBase):
         config_file (str): String path to the kubernetes config file to use
 
         """
+        super(ClientBase, self).__init__(environment, instance_id)
+
         logger.debug("Creating Kuberentes client from config file")
         self.api_client = kubernetes.config.new_client_from_config(
             config_file=kube_config_file)

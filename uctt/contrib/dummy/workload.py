@@ -6,24 +6,19 @@ Dummy workload plugin
 from typing import Dict, Any
 import logging
 
-import uctt
+from uctt.plugin import Type
+from uctt.environment import Environment
 from uctt.workload import WorkloadBase
+
+from .base import DummyFixtures
 
 logger = logging.getLogger('uctt.contrib.dummy.workload')
 
-
-class DummyWorkloadPlugin(WorkloadBase):
+class DummyWorkloadPlugin(DummyFixtures, WorkloadBase):
     """ Dummy workload class """
 
-    def __init__(self, config, instance_id):
-        """ Run the super constructor but also set class properties """
-        super(WorkloadBase, self).__init__(config, instance_id)
-
-        self.outputs = {}
-
-    def arguments(self, outputs: Dict[str, Any]
-                  = {}, clients: Dict[str, Any] = {}):
-        """ Take workload arguments
+    def __init__(self, environment: Environment, instance_id: str, fixtures: Dict[str, Dict[str, Any]] = {}):
+        """ Run the super constructor but also set class properties
 
         Parameters:
         -----------
@@ -35,15 +30,5 @@ class DummyWorkloadPlugin(WorkloadBase):
             should be requested when working on a provisioner
 
         """
-        self.outputs = uctt.new_outputs_from_dict(
-            config=self.config, output_list=outputs)
-        self.clients = uctt.new_clients_from_dict(
-            config=self.config, client_list=clients)
-
-    def get_output(self, instance_id: str):
-        """ Retrieve a dummy output """
-        logger.info("{}:execute: get_output()".format(self.instance_id))
-        if not self.outputs:
-            raise ValueError(
-                'No outputs have been added to the dummy workload')
-        return self.outputs.get_plugin(instance_id=instance_id)
+        WorkloadBase.__init__(self, environment, instance_id)
+        DummyFixtures.__init__(self, environment, fixtures)

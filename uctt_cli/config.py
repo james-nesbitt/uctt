@@ -3,8 +3,9 @@ from typing import Dict, Any
 
 import json
 
-from configerus.config import Config
+from configerus.loaded import LOADED_KEY_ROOT
 
+from uctt.environment import Environment
 from uctt.cli import CliBase
 
 logger = logging.getLogger('uctt.cli.config')
@@ -12,19 +13,28 @@ logger = logging.getLogger('uctt.cli.config')
 
 class ConfigCliPlugin(CliBase):
 
-    def fire(self, fixtures: Dict[str, Any]):
+    def fire(self):
         """ return a dict of commands """
         return {
-            'config': ConfigGroup(fixtures['config'])
+            'config': ConfigGroup(self.environment)
         }
 
 
 class ConfigGroup():
 
-    def __init__(self, config: Config):
-        self.config = config
+    def __init__(self, environment: Environment):
+        self.environment = environment
 
-    def get(self, label: str, key: str, raw: bool = False):
+    def loaded(self, raw: bool = False):
+        """ List loaded config labels """
+        loaded = self.environment.config.loaded
+        value = list(loaded)
+        if raw:
+            return value
+        else:
+            return json.dumps(value)
+
+    def get(self, label: str, key: str = LOADED_KEY_ROOT, raw: bool = False):
         """ Retrieve configuration from the config object
 
         USAGE:
@@ -34,7 +44,7 @@ class ConfigGroup():
 
         """
         try:
-            loaded = self.config.load(label)
+            loaded = self.environment.config.load(label)
         except KeyError as e:
             return "Could not find the config label '{}'".format(label)
 
@@ -43,6 +53,6 @@ class ConfigGroup():
             if raw:
                 return value
             else:
-                return json.dumps(value)
+                return json.dumps(value, indent=2)
         except KeyError as e:
             return "Could not find the config key '{}'".format(key)

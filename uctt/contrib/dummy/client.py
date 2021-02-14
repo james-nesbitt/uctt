@@ -7,13 +7,15 @@ Dummy client plugin
 import logging
 from typing import Dict, Any
 
-import uctt
+from uctt.plugin import Type
+from uctt.environment import Environment
 from uctt.client import ClientBase
+
+from .base import DummyFixtures
 
 logger = logging.getLogger('uctt.contrib.dummy.client')
 
-
-class DummyClientPlugin(ClientBase):
+class DummyClientPlugin(DummyFixtures, ClientBase):
     """ Dummy client class
 
     As with all dummies, this is a failsafe plugin, that should never throw any
@@ -27,31 +29,23 @@ class DummyClientPlugin(ClientBase):
     anything
     """
 
-    def __init__(self, config, instance_id):
-        """ Run the super constructor but also set class properties """
-        super(ClientBase, self).__init__(config, instance_id)
+    def __init__(self, environment: Environment, instance_id: str, fixtures: Dict[str, Dict[str, Any]] = {}):
+        """ Run the super constructor but also set class properties
 
-        self.outputs = {}
+        Overrides the ClientBase.__init__
 
-    def arguments(self, outputs: Dict[str, Any] = {}):
-        """ Take workload arguments
+        Arguments:
+        ----------
 
-        Parameters:
-        -----------
+        environment (uctt.environment.Environment) : Environment in which this
+            plugin exists.
 
-        outputs (Dict[Dict]) : pass in a dictionary which defines outputs that
-            should be returned
+        instance_id (str) : unique identifier for this plugin instance.
 
-        clients (Dict[Dict]) : pass in a dictionary which defines which clients
-            should be requested when working on a provisioner
+        fixtures (dict) : You can pass in some fixture definitions which this
+            class will turn into fixtures and make retrievable.  This is a big
+            part of the dummy.
 
         """
-        self.outputs = uctt.new_outputs_from_dict(
-            config=self.config, output_list=outputs)
-
-    def get_output(self, instance_id: str):
-        """ Retrieve a dummy output """
-        logger.info("{}:execute: get_output()".format(self.instance_id))
-        if not self.outputs:
-            raise ValueError("No outputs have been added to the dummy client")
-        return self.outputs.get_plugin(instance_id=instance_id)
+        ClientBase.__init__(self, environment, instance_id)
+        DummyFixtures.__init__(self, environment, fixtures)

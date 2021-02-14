@@ -11,9 +11,8 @@ import subprocess
 from typing import Dict, List, Any
 
 from configerus.loaded import LOADED_KEY_ROOT
-import uctt
 from uctt.output import UCTT_PLUGIN_TYPE_OUTPUT, UCTT_OUTPUT_CONFIG_OUTPUTS_KEY, OutputBase
-from uctt.instances import PluginInstances
+from uctt.fixtures import Fixtures
 from uctt.provisioner import ProvisionerBase
 from uctt.contrib.common import UCTT_PLUGIN_ID_OUTPUT_DICT, UCTT_PLUGIN_ID_OUTPUT_TEXT
 
@@ -37,9 +36,6 @@ TERRAFORM_PROVISIONER_DEFAULT_VARS_FILE = 'mtt_terraform.tfvars.json'
 """ Default vars file if none was specified """
 TERRAFORM_PROVISIONER_DEFAULT_STATE_SUBPATH = 'mtt-state'
 """ Default vars file if none was specified """
-
-TERRAFORM_OUTPUT_KEY_CLIENTS = "clients"
-""" A terraform output can be used to define clients, this is the output name """
 
 
 class TerraformProvisionerPlugin(ProvisionerBase):
@@ -73,27 +69,24 @@ class TerraformProvisionerPlugin(ProvisionerBase):
 
     """
 
-    def prepare(self, label: str = TERRAFORM_PROVISIONER_CONFIG_LABEL,
-                base: Any = LOADED_KEY_ROOT):
-        """
+    def __init__(self, environment, instance_id,
+                 label: str = TERRAFORM_PROVISIONER_CONFIG_LABEL, base: Any = LOADED_KEY_ROOT):
+        """ Run the super constructor but also set class properties
 
         Interpret provided config and configure the object with all of the needed
         pieces for executing terraform commands
 
         """
+        super(ProvisionerBase.__init__(self, environment, instance_id)
 
         logger.info("Preparing Terraform setting")
-
-        # we are going to do configerus key merging, so keep the
-        # base as a dict instead of a string
-        if not isinstance(base, dict):
-            base = [base]
 
         self.terraform_config_label = label
         """ configerus load label that should contain all of the config """
         self.terraform_config_base = base
         """ configerus get key that should contain all tf config """
-        self.terraform_config = self.config.load(self.terraform_config_label)
+        self.terraform_config = self.environment.config.load(
+            self.terraform_config_label)
         """ get a configerus LoadedConfig for the terraform label """
 
         self.working_dir = self.terraform_config.get([self.terraform_config_base, TERRAFORM_PROVISIONER_CONFIG_PLAN_PATH_KEY],
@@ -134,6 +127,14 @@ class TerraformProvisionerPlugin(ProvisionerBase):
             variables=self.vars)
         """ TerraformClient instance """
 
+        # First make a set of output plugins config told us about (may be
+        # empty)
+        self.outputs = self.environment.add_outputs_from_config(
+            label=self.terraform_config_label, base=[
+                self.terraform_config_base, TERRAFORM_PROVISIONER_CONFIG_OUTPUTS_KEY])
+
+    def prepare(self):
+        """ run terraform init """
         logger.info("Running Terraform INIT")
         self.tf.init()
 
@@ -145,7 +146,7 @@ class TerraformProvisionerPlugin(ProvisionerBase):
     def apply(self):
         """ Create all terraform resources described in the plan """
         logger.info("Running Terraform APPLY")
-        self.tf.apply()
+        # self.tf.apply()
 
     def destroy(self):
         """ Remove all terraform resources in state """
@@ -169,13 +170,7 @@ class TerraformProvisionerPlugin(ProvisionerBase):
             type=UCTT_PLUGIN_TYPE_OUTPUT, plugin_id=plugin_id, instance_id=instance_id)
         return output
 
-    def get_client(self, plugin_id: str = '', instance_id: str = '',
-                   exception_if_missing: bool = True):
-        """ make a client of the type, and optionally of the index """
-        raise NotImplementedError(
-            'This provisioner has not yet implemented get_client')
-
-    def get_outputs(self) -> PluginInstances:
+    def get_outputs(self) -> Fixtures:
         """ retrieve an output from terraform
 
         For other UCTT plugins we can just load configuration, and creating
@@ -200,15 +195,9 @@ class TerraformProvisionerPlugin(ProvisionerBase):
         Returns:
         --------
 
-        A PluginInstances set of plugins as instances.
+        A Fixtures set of plugins.
 
         """
-        # First make a set of output plugins config told us about (may be
-        # empty)
-        outputs = uctt.new_outputs_from_config(
-            config=self.config,
-            label=self.terraform_config_label,
-            base=[self.terraform_config_base, TERRAFORM_PROVISIONER_CONFIG_OUTPUTS_KEY])
 
         # now we ask TF what output it nows about and merge together those as
         # new output plugins.
@@ -222,25 +211,27 @@ class TerraformProvisionerPlugin(ProvisionerBase):
             output_value = output_struct['value']
 
             # see if we already have an output plugin for this name
-            plugin = outputs.get_plugin(
+            plugin = self.outputs.get_plugin(
                 type=UCTT_PLUGIN_TYPE_OUTPUT,
                 instance_id=output_key,
                 exception_if_missing=False)
             if not plugin:
                 if output_type == 'object':
-                    plugin = outputs.add_plugin(
-                        type=UCTT_PLUGIN_TYPE_OUTPUT,
+                    fixture = self.environment.add_output(
                         plugin_id=UCTT_PLUGIN_ID_OUTPUT_DICT,
                         instance_id=output_key,
-                        priority=self.config.default_priority())
+                        priority=self.environment.plugin_priority(delta=5),
+                        arguments={'data':output_value})
                 else:
-                    plugin = outputs.add_plugin(
-                        type=UCTT_PLUGIN_TYPE_OUTPUT,
+                    fixture = self.environment.add_output(
                         plugin_id=UCTT_PLUGIN_ID_OUTPUT_TEXT,
                         instance_id=output_key,
-                        priority=self.config.default_priority())
+                        priority=self.environment.plugin_priority(delta=5),
+                        arguments={'data':output_value})
 
-            plugin.arguments(output_value)
+                self.outputs.add_fixture(fixture)
+            else:
+                plugin.set_data(output_value)
 
         return outputs
 

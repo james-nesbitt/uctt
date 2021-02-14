@@ -8,9 +8,9 @@ a Docker client plugin.
 """
 
 import os
-from configerus.config import Config
 
-from uctt import plugin as uctt_plugin
+from uctt.plugin import Factory, Type
+from uctt.environment import Environment
 
 from .client import DockerClientPlugin
 
@@ -18,17 +18,19 @@ UCTT_PLUGIN_ID_DOCKER_CLIENT = 'mtt_docker'
 """ client plugin_id for the mtt dummy plugin """
 
 
-@uctt_plugin.Factory(type=uctt_plugin.Type.CLIENT,
-                     plugin_id=UCTT_PLUGIN_ID_DOCKER_CLIENT)
-def uctt_plugin_factory_client_docker(config: Config, instance_id: str = ''):
+@Factory(type=Type.CLIENT, plugin_id=UCTT_PLUGIN_ID_DOCKER_CLIENT)
+def uctt_plugin_factory_client_docker(
+    environment: Environment, instance_id: str = '', host: str = '', cert_path: str = '', tls_verify: bool = True,
+        compose_tls_version: str = 'TLSv1_2'):
     """ create an mtt client dict plugin """
-    return DockerClientPlugin(config, instance_id)
+    return DockerClientPlugin(environment, instance_id,
+                              host, cert_path, tls_verify, compose_tls_version)
 
 
-""" SetupTools EntryPoint BootStrapping """
+""" SetupTools EntryPoint UCTT BootStrapping """
 
 
-def bootstrap(config: Config):
+def bootstrap(environment: Environment):
     """ UCTT_Docker bootstrap
 
     We dont't take any action.  Our purpose is to run the above factory

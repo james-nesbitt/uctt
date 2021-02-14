@@ -6,29 +6,30 @@ MTT contrib functionality for terraform.  Primarily a terraform provisioner
 plugin.
 
 """
+from typing import Any
 
-from configerus.config import Config
+from configerus.loaded import LOADED_KEY_ROOT
 
-from uctt import plugin as uctt_plugin
+from uctt.plugin import Factory, Type
+from uctt.environment import Environment
 
-from .provisioner import TerraformProvisionerPlugin
+from .provisioner import TerraformProvisionerPlugin, TERRAFORM_PROVISIONER_CONFIG_LABEL
 
 UCTT_TERRAFORM_PROVISIONER_PLUGIN_ID = 'uctt_terraform'
 """ Terraform provisioner plugin id """
 
 
-@uctt_plugin.Factory(type=uctt_plugin.Type.PROVISIONER,
-                     plugin_id=UCTT_TERRAFORM_PROVISIONER_PLUGIN_ID)
+@Factory(type=Type.PROVISIONER, plugin_id=UCTT_TERRAFORM_PROVISIONER_PLUGIN_ID)
 def uctt_plugin_factory_provisioner_terraform(
-        config: Config, instance_id: str = ""):
+        environment: Environment, instance_id: str = "", label: str = TERRAFORM_PROVISIONER_CONFIG_LABEL, base: Any = LOADED_KEY_ROOT):
     """ create an mtt provisionersss dict plugin """
-    return TerraformProvisionerPlugin(config, instance_id)
+    return TerraformProvisionerPlugin(environment, instance_id, label, base)
 
 
-""" SetupTools EntryPoint BootStrapping """
+""" SetupTools EntryPoint UCTT BootStrapping """
 
 
-def bootstrap(config: Config):
+def bootstrap(environment: Environment):
     """ UCTT_Terraform bootstrap
 
     We dont't take any action.  Our purpose is to run the above factory
