@@ -1,7 +1,14 @@
+"""
+
+UCTT Plugin definition and management
+
+@NOTE we would like to type hint the 'environment' variable but it would
+    create a circular import. This is not totally avoidable as plugin
+    holds an Environment, but an Environments creates the plugin
+
+"""
 import logging
 from enum import Enum, unique
-
-from configerus.config import Config
 
 logger = logging.getLogger('uctt.plugin')
 
@@ -25,17 +32,18 @@ UCTT_PLUGIN_CONFIG_KEY_VALIDATORS = 'validators'
 class UCTTPlugin():
     """ Base MTT Plugin which all plugins can extend """
 
-    def __init__(self, config: Config, instance_id: str):
+    def __init__(self, environment: object, instance_id: str):
         """
         Parameters:
         -----------
 
-        config (Config) : all plugins receive a config object
+        environment (Environment) : Environment object in which this plugin lives.
 
-        id (str) : instance id for the plugin.
+        instance_id (str) : instance id for the plugin.  A unique identifier which
+            the plugin can use for naming and introspective identification.
 
         """
-        self.config = config
+        self.environment = environment
         self.instance_id = instance_id
 
 
@@ -64,6 +72,49 @@ class Type(Enum):
     CLI = 'uctt.plugin.cli'
     """ Plugins extend the uctt cli """
 
+    def from_string(type_string: str) -> 'Type':
+        """ Try to offer some flexibility when defining a type
+
+        UCTT Plugin enum keys are upper case keys such as "OUTPUT" or "CLIENT"
+        and values are in a long form 'uctt.plugin.provisioner'.  Both can be
+        difficult to use, especially for config ources which can't
+        programmatically access the enum.
+
+        This function allows some flexibility in naming.
+
+        Parameters:
+        -----------
+
+        type_string (str) : a string attempt to identify a plugin.  It can be
+            an any-case form of the Type key, the full string value of a Type
+            instance, or the part after 'uctt.plugin.' of the value.
+
+        Returns:
+        --------
+
+        a Type instance matching the passed string
+
+        Raises:
+        -------
+
+        KeyError if the passed argument could not be matched.
+
+        """
+        try:
+            return Type(type_string)
+        except ValueError:
+            pass
+        try:
+            return Type[type_string.upper()]
+        except KeyError:
+            pass
+        try:
+            return Type('uctt.plugin.{}'.format(type_string))
+        except ValueError:
+            pass
+
+        raise KeyError("Could not identify UCTT plugin type requested '{}'".format(type_string))
+
 
 class Factory():
     """ Python decorator class for MTT Plugin factories
@@ -84,7 +135,18 @@ class Factory():
     """ A list of all of the registered factory functions """
 
     def __init__(self, type: Type, plugin_id: str):
-        """ register the decoration """
+        """ register the decoration
+
+        Parameters:
+        -----------
+
+        type (Type) : Plugin type which the factory created
+
+        plugin_id (str) : unique identifier for the plugin which this factory
+            will create.  This will be used on registration and the matching
+            value is used on construction.
+
+        """
         logger.debug(
             "Plugin factory registered `%s:%s`",
             type.value,
@@ -96,18 +158,24 @@ class Factory():
             self.registry[self.type.value] = {}
 
     def __call__(self, func):
-        """ call the decorated function
+        """ Decorator factory wrapping function
 
         Returns:
+        --------
 
-        wrapped function(config: Config)
+        Decorated construction function(config: Config)
+
         """
-        def wrapper(config: Config, instance_id: str):
+        def wrapper(environment: object, instance_id: str, *args, **kwargs):
             logger.debug(
                 "plugin factory exec: %s:%s",
                 self.type.value,
                 self.plugin_id)
-            plugin = func(config=config, instance_id=instance_id)
+            plugin = func(
+                environment=environment,
+                instance_id=instance_id,
+                *args,
+                **kwargs)
             if not isinstance(plugin, UCTTPlugin):
                 logger.warn(
                     "plugin factory did not return an instance of MTT Plugin `{}:{}`".format(
@@ -118,8 +186,17 @@ class Factory():
         self.registry[self.type.value][self.plugin_id] = wrapper
         return wrapper
 
-    def create(self, config: Config, instance_id: str):
-        """ Get an instance of a plugin as created by the decorated """
+    def create(self, environment: object, instance_id: str, *args, **kwargs):
+        """ Get an instance of a plugin as created by the decorated
+
+        Parameters:
+
+        environment (Environment) : Environment object in which this plugin lives.
+
+        instance_id (str) : instance id for the plugin.  A unique identifier which
+            the plugin can use for naming and introspective identification.
+
+        """
         try:
             factory = self.registry[self.type.value][self.plugin_id]
         except KeyError:
@@ -131,4 +208,5 @@ class Factory():
                 "Could not create Plugin instance '{}:{}' as the plugin factory produced an exception".format(
                     self.type.value, self.plugin_id)) from e
 
-        return factory(config=config, instance_id=instance_id)
+        return factory(environment=environment,
+                       instance_id=instance_id, *args, **kwargs)

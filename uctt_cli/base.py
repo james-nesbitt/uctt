@@ -3,9 +3,8 @@ import os
 import importlib.util
 import sys
 
-from uctt import new_config
+from uctt import environment_names, get_environment
 from uctt.plugin import Type, Factory
-from uctt.instances import PluginInstances
 
 
 logger = logging.getLogger('uctt.cli.base')
@@ -21,10 +20,17 @@ FILES = {
 class Base:
     """ A Fire compatible base component """
 
-    def __init__(self):
+    def __init__(self, environment: str = ''):
+        """
 
-        self._fixtures = {}
-        """ CLI Fixtures, plugins instances usable for cli actions """
+        Parameters:
+        -----------
+
+        environment (str) : Environment name in case you want to switch to an
+            alternate environment.
+
+        """
+
         self._paths = {}
         """ key value pair of paths to module namespaces where we can look for injection """
 
@@ -34,11 +40,9 @@ class Base:
         # matches a project
         self._project_init()
 
-        # make sure that we have a sane fixture set
-        if not len(self._fixtures):
-            logger.warn(
-                'UCTT cli was run in a context that provided no fixtures.  This usually means that you are running in a path with no parent ucttc.py file')
-            self.fixtures[UCC_CLI_FIXTURE_KEY_CONFIG] = new_config()
+        if environment == '':
+            environment = environment_names()[0]
+        self._environment = get_environment(environment)
 
         # collect any comands from all discovered cli plugins
         self._collect_commands()
@@ -46,26 +50,26 @@ class Base:
     def _collect_commands(self):
         """ collect commands from all cli plugins
 
-        Get an instance of any registered cli plugin.
+        Create an instance of any registered cli plugin.
         From the plugin, collect the commands and add each command to this
         object directly, so that Fire can see them.
 
         """
 
-        config = self._fixtures[UCC_CLI_FIXTURE_KEY_CONFIG]
-        instances = PluginInstances(config)
-
+        plugin_list = {}
         for plugin_id in Factory.registry[Type.CLI.value]:
+            plugin_list[plugin_id] = {
+                'type': Type.CLI,
+                'plugin_id': plugin_id
+            }
+
+        for plugin in self._environment.add_plugins_from_dict(
+                plugin_list=plugin_list, type=Type.CLI).get_plugins():
             logger.info("loading cli plugin: {}".format(plugin_id))
-            plugin = instances.add_plugin(
-                type=Type.CLI,
-                plugin_id=plugin_id,
-                instance_id=plugin_id,
-                priority=config.default_priority())
 
             if hasattr(plugin, 'fire'):
                 try:
-                    commands = plugin.fire(self._fixtures)
+                    commands = plugin.fire()
                 except TypeError as e:
                     raise NotImplementedError(
                         "Plugin {} did not implement the correct fire(fixtures) interface: {}".format(
@@ -86,7 +90,11 @@ class Base:
     def _project_init(self):
         """ initialize the project by looking for path base injections
 
-        fixtures: does any path point to finding fixture declarations
+        Look for any of our cli module files, and if found import/exec them
+        using core Python module management.
+
+        The modules are expected to interact directly UCTT environments, which
+        the CLI will then discover.
 
         """
         if len(self._paths):
@@ -110,18 +118,14 @@ class Base:
                         module = importlib.util.module_from_spec(spec)
                         spec.loader.exec_module(module)
 
-                        if hasattr(module, 'fixtures'):
-                            for (fixture_name,
-                                 fixture) in module.fixtures().items():
-                                self._fixtures[fixture_name] = fixture
-
-                        else:
-                            logger.error('ucttc module has no fixtures')
+                        # Note that the module is responsible for interacting
+                        # directly with UCTT and creating environments that
+                        # The CLI will interact with
 
     def _add_project_root_path(self):
         """ Find a string path to the project root
 
-        Start at the cdw and search upwards until we find a path that contains
+        Start at the cwd() and search upwards until we find a path that contains
         one of the Marker files in FILES
 
         """
@@ -136,10 +140,4 @@ class Base:
                 if os.path.isfile(marker_path):
                     self._paths['pwd'] = check_path
                     return
-
-    # def dummy(self):
-    #     """ Dummy command """
-    #     print("You dummy")
-
-
-""" Try to discover fixtures """
+            check_path = os.path.dirname(check_path)

@@ -14,9 +14,9 @@ class DockerClientPlugin(ClientBase, DockerClient):
 
     """
 
-    def arguments(self, host: str, cert_path: str, tls_verify: bool = True,
-                  compose_tls_version: str = 'TLSv1_2'):
-        """ Build the DockerClient
+    def __init__(self, environment, instance_id, host: str, cert_path: str, tls_verify: bool = True,
+                 compose_tls_version: str = 'TLSv1_2'):
+        """ Run the super constructor but also set class properties
 
         In order to decorate this existing class as a DockerClient, without using the
         DockerClient constructor, nor the from_env class method, we have to reproduce
@@ -40,7 +40,10 @@ class DockerClientPlugin(ClientBase, DockerClient):
         compose_tls_version (str) [COMPOSE_TLS_VERSION] what TLS version should
             the Docker client use for docker compose.
 
+
         """
+        super(ClientBase, self).__init__(environment, instance_id)
+
         logger.debug(
             "Configuring docker client with args for host:{}".format(host))
 

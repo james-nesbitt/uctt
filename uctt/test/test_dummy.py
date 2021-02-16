@@ -10,13 +10,16 @@ Here we test the overall toolbox workflows using dummy plugins.
 """
 import logging
 import unittest
+
 # Configerus imports needed to create a config object
-import configerus
 from configerus.contrib.dict import PLUGIN_ID_SOURCE_DICT
+
 # UCTT components we will need to access the toolbox
-import uctt
-# We import this so that we don't need to guess on plugin_ids, but not needed
-from uctt.contrib.dummy import UCTT_PLUGIN_ID_DUMMY
+from uctt import new_environment, environment_names, get_environment
+from uctt.plugin import Type
+# Used for type hinting
+from uctt.environment import Environment
+from uctt.fixtures import Fixtures
 
 # imports used only for type testing
 from uctt.contrib.dummy.provisioner import DummyProvisionerPlugin
@@ -26,35 +29,64 @@ from uctt.contrib.dummy.workload import DummyWorkloadPlugin
 logger = logging.getLogger("test_dummy")
 logger.setLevel(logging.INFO)
 
-""" Contents of test config files used as the source for a config object """
 
-""" TESTS """
+""" Config for generating dummy plugins
 
+ What is this thing
 
-class ConfigTemplating(unittest.TestCase):
+Well it is a fixtures list which will get passed to add_fixtures_from_config()
+on the Environment object.
+Plugins are in linear order key=>plugin_definition.
 
-    def _dummy_config(self):
-        """ Create a config object for dummy conventions """
+Some plugins/fixtures take 'arguments' which are passed to their constructors.
+The Dummy plugins tend to take a 'fixtures' argument which they use to build
+more plugins.  This is why it has a deep nested look.
 
-        config = configerus.new_config()
-        uctt.bootstrap(config, ['uctt_dummy'])  # not strictly necessary
-        config.add_source(PLUGIN_ID_SOURCE_DICT).set_data({
-            'provisioner': {
-                'plugin_id': UCTT_PLUGIN_ID_DUMMY,
-                'clients': {
-                    'one': {
+WHAT WEIRD THINGS HAVE WE DONE:
+
+1. plugin type:  sometimes we use the actual Type.XXXX.value, sometimes a short
+        string, and a long string. We need to make sure that all of them work.
+
+"""
+
+CONFIG_DATA = {
+    'jsonschema': {
+        'plugin': {
+            "type": "object",
+            "properties": {
+                "type": {"type": "string"},
+                "plugin_id": {"type": "string"},
+            }
+        }
+    },
+    'fixtures': {
+        'prov1': {
+            'type': 'PROVISIONER',
+            'plugin_id': 'dummy',
+            'arguments': {
+                # Dummy provisioner fixtures
+                'fixtures': {
+                    # 1. A dummy client fixture that holds 2 dummy outputs
+                    'client1': {
+                        'type': 'client',
                         'plugin_id': 'dummy',
                         'arguments': {
-                            'outputs': {
-                                'one': {
+                            'fixtures': {
+                                # 1.a. First client output is a dummy text
+                                'output1': {
+                                    'type': 'output',
                                     'plugin_id': 'text',
                                     'arguments': {
+                                        # The text output takes a string 'data' constructor argument
                                         'data': "prov client one output one"
                                     }
                                 },
-                                'two': {
+                                # 1.b. Second client output is a dummy dict
+                                'output2': {
+                                    'type': 'uctt.plugin.output',
                                     'plugin_id': 'dict',
                                     'arguments': {
+                                        # The dict output takes a dict 'data' constructor argument
                                         'data': {
                                             '1': {
                                                 '1': "prov client one output two data one.one"
@@ -64,68 +96,83 @@ class ConfigTemplating(unittest.TestCase):
                                 }
                             }
                         }
-                    }
-                },
-                'outputs': {
-                    'dummy': {
+                    },
+                    # 2. Dummy text output
+                    'output1': {
+                        'type': Type.OUTPUT.value,
                         'plugin_id': 'text',
                         'arguments': {
                             'data': "prov dummy output one"
                         }
                     }
                 }
-            },
-            'workloads': {
-                'one': {
-                    'plugin_id': UCTT_PLUGIN_ID_DUMMY,
-                },
-                'two': {
-                    'plugin_id': UCTT_PLUGIN_ID_DUMMY,
-                    'arguments': {
-                        'outputs': {
-                            'one': {
-                                'plugin_id': 'text',
-                                'arguments': {
-                                    'data': "client two dummy output one"
-                                }
-                            }
-                        },
-                        'clients': {
-                            'dummy': {
-                                'plugin_id': UCTT_PLUGIN_ID_DUMMY
-                            }
+            }
+        },
+        'work1': {
+            'type': Type.WORKLOAD.value,
+            'plugin_id': 'dummy',
+        },
+        'work2': {
+            'type': 'workload',
+            'plugin_id': 'dummy',
+            'arguments': {
+                'fixtures': {
+                    'output1': {
+                        'type': 'output',
+                        'plugin_id': 'text',
+                        'arguments': {
+                            # The text output takes a string 'data' constructor argument
+                            'data': "workload two dummy output one"
                         }
+                    },
+                    'client1': {
+                        'type': 'client',
+                        'plugin_id': 'dummy'
                     }
                 }
-            },
-            'dummy': {
-                '1': 'dummy one'
             }
-        })
+        }
+    }
+}
 
-        return config
+""" TESTS """
 
-    def _dummy_provisioner(self):
-        """ Create a config object, and then create a provisioner from it """
-        config = self._dummy_config()
-        return uctt.new_provisioner_from_config(config)
+class ConfigTemplating(unittest.TestCase):
 
-    def _dummy_workloads(self):
-        """ Create a config object, and then get workloads """
-        config = self._dummy_config()
-        return uctt.new_workloads_from_config(config)
+    def _dummy_environment(self) -> Environment:
+        """ Create an environment object, add the common config source data """
+        if not 'dummy' in environment_names():
+            environment = new_environment(
+                name='dummy', additional_uctt_bootstraps=['uctt_dummy'])
+            environment.config.add_source(
+                PLUGIN_ID_SOURCE_DICT).set_data(CONFIG_DATA)
+
+            # this looks magical, but it works because we have structured the
+            # fixtures DICT to match default values
+            environment.add_fixtures_from_config()
+
+        return get_environment(name='dummy')
+
+    def _dummy_provisioner(self) -> Fixtures:
+        """ Return a Fixtures of all WORKLOAD plugins """
+        environment = self._dummy_environment()
+        return environment.fixtures.get_plugin(type=Type.PROVISIONER)
+
+    def _dummy_workloads(self) -> Fixtures:
+        """ Return a Fixtures of all WORKLOAD plugins """
+        environment = self._dummy_environment()
+        return environment.fixtures.get_filtered(type=Type.WORKLOAD)
 
     """ Tests """
 
     def test_dummy_config_basics(self):
         """ some sanity testing on the shared config object """
-        config = self._dummy_config()
+        environment = self._dummy_environment()
 
-        dummy_config = config.load('dummy')
-        self.assertEqual(dummy_config.get('1'), "dummy one")
+        dummy_config = environment.config.load('fixtures')
+        self.assertEqual(dummy_config.get('prov1.plugin_id'), "dummy")
 
-        workload_config = config.load(
-            'workloads', validator="jsonschema:dummy.workloads")
+        dummy_config.get('work1', validator="jsonschema:plugin")
 
     def test_provisioner_sanity(self):
         """ some sanity testing on loading a provisioner """
@@ -136,7 +183,7 @@ class ConfigTemplating(unittest.TestCase):
         """ test that we can load the workloads """
         workloads = self._dummy_workloads()
 
-        workload_one = workloads.get_plugin(instance_id='one')
+        workload_one = workloads.get_plugin(instance_id='work1')
         self.assertIsInstance(workload_one, DummyWorkloadPlugin)
 
         with self.assertRaises(KeyError):
@@ -156,10 +203,10 @@ class ConfigTemplating(unittest.TestCase):
     def test_workloads_outputs(self):
         """ test that the dummy workload got its outputs from configuration """
         workloads = self._dummy_workloads()
-        workload_two = workloads.get_plugin(instance_id='two')
+        workload_two = workloads.get_plugin(instance_id='work2')
 
         self.assertEqual(workload_two.get_output(
-            instance_id='one').get_output(), "client two dummy output one")
+            instance_id='output1').get_output(), "workload two dummy output one")
 
     def test_provisioner_outputs(self):
         """ test that the provisioner produces the needed clients """
@@ -167,7 +214,7 @@ class ConfigTemplating(unittest.TestCase):
         provisioner.prepare()
 
         # check that we can get an output from a provisioner
-        provisioner_output_dummy = provisioner.get_output(instance_id='dummy')
+        provisioner_output_dummy = provisioner.get_output(instance_id='output1')
         self.assertEqual(
             provisioner_output_dummy.get_output(),
             "prov dummy output one")
@@ -182,15 +229,12 @@ class ConfigTemplating(unittest.TestCase):
         provisioner.prepare()
 
         # two ways to get the same client in this case
-        client_one = provisioner.get_client(instance_id='one')
+        client_one = provisioner.get_client(instance_id='client1')
         self.assertIsInstance(client_one, DummyClientPlugin)
-        self.assertEqual(client_one.instance_id, 'one')
+        self.assertEqual(client_one.instance_id, 'client1')
         client_dummy = provisioner.get_client(plugin_id='dummy')
         self.assertIsInstance(client_dummy, DummyClientPlugin)
-        self.assertEqual(client_dummy.instance_id, 'one')
-
-        client_one = provisioner.get_client(plugin_id='dummy')
-        self.assertEqual(client_one.instance_id, 'one')
+        self.assertEqual(client_dummy.instance_id, 'client1')
 
         # make sure that an error is raised if the key doesn't exist
         with self.assertRaises(KeyError):
@@ -201,17 +245,17 @@ class ConfigTemplating(unittest.TestCase):
         provisioner = self._dummy_provisioner()
         provisioner.prepare()
 
-        client_one = provisioner.get_client(instance_id='one')
+        client_one = provisioner.get_client(instance_id='client1')
         self.assertIsInstance(client_one, DummyClientPlugin)
 
         # test that the dummy plugin can load a text output
-        client_one_output = client_one.get_output(instance_id='one')
+        client_one_output = client_one.get_output(instance_id='output1')
         self.assertEqual(
             client_one_output.get_output(),
             "prov client one output one")
 
         # test that the dummy plugin can load a dict output
-        client_two_output = client_one.get_output(instance_id='two')
+        client_two_output = client_one.get_output(instance_id='output2')
         # Test dict as a loaded config plugin
         self.assertEqual(
             client_two_output.get_output('1.1'),

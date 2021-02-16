@@ -1,8 +1,7 @@
 import logging
 from typing import Dict
 
-from configerus.contrib.dict import PLUGIN_ID_SOURCE_DICT
-from configerus.loaded import LOADED_KEY_ROOT
+from configerus.loaded import Loaded, LOADED_KEY_ROOT
 from uctt.output import OutputBase
 
 logger = logging.getLogger('uctt.contrib.common.output.dict')
@@ -16,15 +15,15 @@ class DictOutputPlugin(OutputBase):
 
     """
 
-    def arguments(self, data: Dict, validator: str = ''):
-        """ Assign data
+    def __init__(self, environment, instance_id,
+                 data: Dict = {}, validator: str = ''):
+        """ Run the super constructor but also set class properties
 
-        This turns the data into a dict configerus source and adds it to the
-        configerus Config object, using a unique load() label.
-        The unique label keeps the data separate, but still accessible.
+        Here we treat the data dict as a configerus.loaded.Loaded instance,
+        with out config as a parent, so that we can leverage the configerus
+        tools for searching, formating and validation.
 
-        a configerus LoadedConfig object is kept for the config, which can
-        be validated if you passed a validator.
+        a configerus.loaded.Loaded object is kept for the config.
 
         Parameters:
         -----------
@@ -32,17 +31,34 @@ class DictOutputPlugin(OutputBase):
         data (Dict) : any dict data to be stored
 
         validator (str) : a configerus validator target if you want valdiation
-            applied to the data as it is added.
+            applied to the data before it is added.
+
+        Raises:
+        -------
+
+        A configerus.validate.ValidationError is raised if you passed in a
+        validator target and validation failed.
+
+        An AssertionError is raised if you didn't pass in a Dict.
 
         """
-        assert isinstance(data, dict), type(data)
+        super(OutputBase, self).__init__(environment, instance_id)
 
-        self.config_instance_id = 'dict-output-{}'.format(self.instance_id)
-        self.config.add_source(PLUGIN_ID_SOURCE_DICT, self.config_instance_id).set_data({
-            self.config_instance_id: data
-        })
-        self.loaded_config = self.config.load(
-            self.config_instance_id, validator=validator)
+        self.set_data(data, validator)
+
+    def set_data(self, data: Dict = {}, validator: str = ''):
+        """ Re-set the data for the output """
+        assert isinstance(
+            data, dict), "Expected Dict of data, got {}".format(data)
+
+        if validator:
+            self.environment.config.validate(data, validator)
+
+        mock_instance_id = 'dict-output-{}'.format(self.instance_id)
+        self.loaded = Loaded(
+            data=data,
+            parent=self.environment.config,
+            instance_id=mock_instance_id)
 
     def get_output(self, key: str = LOADED_KEY_ROOT, validator: str = ''):
         """ retrieve an output
@@ -60,11 +76,23 @@ class DictOutputPlugin(OutputBase):
             data structure.  This uses the configerus .get() command which uses
             dot "." notation to descend a tree.
 
-        valdiator (str) : you can tell configerus to apply a validator to the
+        validator (str) : you can tell configerus to apply a validator to the
             return value
 
-        """
-        if hasattr(self, 'loaded_config'):
-            return self.loaded_config.get(key, validator=validator)
+        Returns:
+        --------
 
-        raise AttributeError("No data has been assigned to this output object")
+        Any of retreived data in the assigned data, as though you were making
+        a configerus.loaded.Loaded.get()
+
+        Raises:
+        -------
+
+        AttributeError if you are trying to get output before you have
+        assigned data using .arguments()
+
+        configerus.validate.ValidationError if you passed in a validator and
+        validation failed.
+
+        """
+        return self.loaded.get(key, validator=validator)

@@ -8,9 +8,10 @@ kubernetes clients and kubernetes workloads.
 """
 
 import os
-from configerus.config import Config
+from typing import List
 
-from uctt import plugin as uctt_plugin
+from uctt.plugin import Factory, Type
+from uctt.environment import Environment
 
 from .client import KubernetesClientPlugin
 from .workload import KubernetesSpecFilesWorkloadPlugin
@@ -19,30 +20,28 @@ UCTT_PLUGIN_ID_KUBERNETES_CLIENT = 'mtt_kubernetes'
 """ client plugin_id for the mtt dummy plugin """
 
 
-@uctt_plugin.Factory(type=uctt_plugin.Type.CLIENT,
-                     plugin_id=UCTT_PLUGIN_ID_KUBERNETES_CLIENT)
+@Factory(type=Type.CLIENT, plugin_id=UCTT_PLUGIN_ID_KUBERNETES_CLIENT)
 def uctt_plugin_factory_client_kubernetes(
-        config: Config, instance_id: str = ''):
+        environment: Environment, instance_id: str = '', kube_config_file: str = ''):
     """ create an mtt kubernetes client plugin """
-    return KubernetesClientPlugin(config, instance_id)
+    return KubernetesClientPlugin(environment, instance_id, kube_config)
 
 
 UCTT_PLUGIN_ID_KUBERNETES_SPEC_WORKLAOD = 'mtt_kubernetes_spec'
 """ workload plugin_id for the mtt_kubernetes spec plugin """
 
 
-@uctt_plugin.Factory(type=uctt_plugin.Type.WORKLOAD,
-                     plugin_id=UCTT_PLUGIN_ID_KUBERNETES_SPEC_WORKLAOD)
+@Factory(type=Type.WORKLOAD, plugin_id=UCTT_PLUGIN_ID_KUBERNETES_SPEC_WORKLAOD)
 def uctt_plugin_factory_workload_kubernetes_spec(
-        config: Config, instance_id: str = ''):
+        environment: Environment, instance_id: str = '', files: List[str] = []):
     """ create an mtt kubernetes spec workload plugin """
-    return KubernetesSpecFilesWorkloadPlugin(config, instance_id)
+    return KubernetesSpecFilesWorkloadPlugin(environment, instance_id, files)
 
 
-""" SetupTools EntryPoint BootStrapping """
+""" SetupTools EntryPoint UCTT BootStrapping """
 
 
-def bootstrap(config: Config):
+def bootstrap(environment: Environment):
     """ UCTT_Kubernetes bootstrap
 
     We dont't take any action.  Our purpose is to run the above factory

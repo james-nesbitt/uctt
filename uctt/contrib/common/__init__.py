@@ -3,9 +3,10 @@
 Common UCTT plugins
 
 """
-from configerus.config import Config
+from typing import Dict
 
-from uctt import plugin as uctt_plugin
+from uctt.plugin import Factory, Type
+from uctt.environment import Environment
 
 from .dict_output import DictOutputPlugin
 from .text_output import TextOutputPlugin
@@ -14,27 +15,27 @@ UCTT_PLUGIN_ID_OUTPUT_DICT = 'dict'
 """ output plugin_id for the dict plugin """
 
 
-@uctt_plugin.Factory(type=uctt_plugin.Type.OUTPUT,
-                     plugin_id=UCTT_PLUGIN_ID_OUTPUT_DICT)
-def uctt_plugin_factory_output_dict(config: Config, instance_id: str = ''):
+@Factory(type=Type.OUTPUT, plugin_id=UCTT_PLUGIN_ID_OUTPUT_DICT)
+def uctt_plugin_factory_output_dict(
+        environment: Environment, instance_id: str = '', data: Dict = {}, validator: str = ''):
     """ create an output dict plugin """
-    return DictOutputPlugin(config, instance_id)
+    return DictOutputPlugin(environment, instance_id, data, validator)
 
 
 UCTT_PLUGIN_ID_OUTPUT_TEXT = 'text'
 """ output plugin_id for the text plugin """
 
 
-@uctt_plugin.Factory(type=uctt_plugin.Type.OUTPUT,
-                     plugin_id=UCTT_PLUGIN_ID_OUTPUT_TEXT)
-def uctt_plugin_factory_output_text(config: Config, instance_id: str = ''):
+@Factory(type=Type.OUTPUT, plugin_id=UCTT_PLUGIN_ID_OUTPUT_TEXT)
+def uctt_plugin_factory_output_text(
+        environment: Environment, instance_id: str = '', data: str = ''):
     """ create an output text plugin """
-    return TextOutputPlugin(config, instance_id)
+    return TextOutputPlugin(environment, instance_id, data)
 
 
 """ SetupTools EntryPoint BootStrapping """
 
 
-def bootstrap(config: Config):
+def bootstrap(environment: Environment):
     """ UCTT Bootstrapper - don't actually do anything """
     pass

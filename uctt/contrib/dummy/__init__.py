@@ -7,9 +7,14 @@ and for testing.
 
 """
 
-from configerus.config import Config
+import logging
+from typing import Any, Dict
 
-from uctt import plugin as uctt_plugin
+from configerus.loaded import LOADED_KEY_ROOT
+
+from uctt.plugin import Factory, Type
+from uctt.environment import Environment
+from uctt.provisioner import UCTT_PROVISIONER_CONFIG_PROVISIONER_LABEL
 
 from .provisioner import DummyProvisionerPlugin
 from .client import DummyClientPlugin
@@ -18,41 +23,32 @@ from .workload import DummyWorkloadPlugin
 UCTT_PLUGIN_ID_DUMMY = 'dummy'
 """ All of the dummy plugins use 'dummy' as their plugin_id """
 
-""" provisioner plugin_id for the mtt dummy plugin """
 
-
-@uctt_plugin.Factory(type=uctt_plugin.Type.PROVISIONER,
-                     plugin_id=UCTT_PLUGIN_ID_DUMMY)
+@Factory(type=Type.PROVISIONER, plugin_id=UCTT_PLUGIN_ID_DUMMY)
 def uctt_plugin_factory_provisioner_dummy(
-        config: Config, instance_id: str = ''):
+        environment: Environment, instance_id: str = '', fixtures: Dict[str, Dict[str, Any]] = {}):
     """ create an mtt provisionersss dict plugin """
-    return DummyProvisionerPlugin(config, instance_id)
+    return DummyProvisionerPlugin(environment, instance_id, fixtures)
 
 
-""" client plugin_id for the mtt dummy plugin """
-
-
-@uctt_plugin.Factory(type=uctt_plugin.Type.CLIENT,
-                     plugin_id=UCTT_PLUGIN_ID_DUMMY)
-def uctt_plugin_factory_client_dummy(config: Config, instance_id: str = ''):
+@Factory(type=Type.CLIENT, plugin_id=UCTT_PLUGIN_ID_DUMMY)
+def uctt_plugin_factory_client_dummy(
+        environment: Environment, instance_id: str = '', fixtures: Dict[str, Dict[str, Any]] = {}):
     """ create an mtt client dict plugin """
-    return DummyClientPlugin(config, instance_id)
+    return DummyClientPlugin(environment, instance_id, fixtures)
 
 
-""" workload plugin_id for the mtt dummy plugin """
-
-
-@uctt_plugin.Factory(type=uctt_plugin.Type.WORKLOAD,
-                     plugin_id=UCTT_PLUGIN_ID_DUMMY)
-def uctt_plugin_factory_workload_dummy(config: Config, instance_id: str = ''):
+@Factory(type=Type.WORKLOAD, plugin_id=UCTT_PLUGIN_ID_DUMMY)
+def uctt_plugin_factory_workload_dummy(
+        environment: Environment, instance_id: str = '', fixtures: Dict[str, Dict[str, Any]] = {}):
     """ create an mtt workload dict plugin """
-    return DummyWorkloadPlugin(config, instance_id)
+    return DummyWorkloadPlugin(environment, instance_id, fixtures)
 
 
-""" SetupTools EntryPoint BootStrapping """
+""" SetupTools EntryPoint UCTT BootStrapping """
 
 
-def bootstrap(config: Config):
+def bootstrap(environment: Environment):
     """ UCTT_Dummy bootstrap
 
     We dont't take any action.  Our purpose is to run the above factory

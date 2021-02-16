@@ -10,21 +10,22 @@ Here we test the overall toolbox workflows using dummy plugins.
 """
 import logging
 import unittest
-# Configerus imports needed to create a config object
-import configerus
+
 from configerus.contrib.dict import PLUGIN_ID_SOURCE_DICT
 # UCTT components we will need to access the toolbox
-import uctt
-
-from uctt.instances import PluginInstances
+from uctt import new_environment, environment_names, get_environment
+from uctt.plugin import Type, Factory
 # We import this so that we don't need to guess on plugin_ids, but not needed
 from uctt.contrib.dummy import UCTT_PLUGIN_ID_DUMMY
 
-# imports used only for type testing
+# Imports used for type hinting
+from uctt.environment import Environment
+from uctt.fixtures import Fixtures
+# imports used only for config creation for testing
 from uctt.provisioner import UCTT_PROVISIONER_CONFIG_PROVISIONERS_LABEL, UCTT_PROVISIONER_CONFIG_PROVISIONER_LABEL
 from uctt.client import UCTT_CLIENT_CONFIG_CLIENTS_LABEL, UCTT_CLIENT_CONFIG_CLIENT_LABEL
 from uctt.workload import UCTT_WORKLOAD_CONFIG_WORKLOADS_LABEL, UCTT_WORKLOAD_CONFIG_WORKLOAD_LABEL
-
+# imports used only for type testing
 from uctt.contrib.dummy.provisioner import DummyProvisionerPlugin
 from uctt.contrib.dummy.client import DummyClientPlugin
 from uctt.contrib.dummy.workload import DummyWorkloadPlugin
@@ -37,37 +38,30 @@ logger.setLevel(logging.INFO)
 """ TESTS """
 
 
-class ConfigTemplating(unittest.TestCase):
+class PluginConstruction(unittest.TestCase):
 
-    def _dummy_config(self):
-        """ Create a config object for dummy conventions """
+    def _dummy_environment(self, name: str) -> Environment:
+        """ Create an environment object, add the common config source data """
+        if not name in environment_names():
+            new_environment(name=name, additional_uctt_bootstraps=['uctt_dummy'])
 
-        config = configerus.new_config()
-        uctt.bootstrap(config, ['uctt_dummy'])  # not strictly necessary
-        return config
+        return get_environment(name=name)
 
     def test_1_construct_dicts(self):
         """ some sanity tests on constructors based on dicts """
-        config = self._dummy_config()
+        environment = self._dummy_environment('test_1')
 
         plugin_dict = {
             'plugin_id': UCTT_PLUGIN_ID_DUMMY,
         }
 
         self.assertIsInstance(
-            uctt.new_provisioner_from_dict(
-                config=config,
-                provisioner_dict=plugin_dict),
+            environment.add_fixture_from_dict(type=Type.PROVISIONER, plugin_dict=plugin_dict).plugin,
             DummyProvisionerPlugin)
         self.assertIsInstance(
-            uctt.new_client_from_dict(
-                config=config,
-                client_dict=plugin_dict),
-            DummyClientPlugin)
+            environment.add_fixture_from_dict(type=Type.CLIENT, plugin_dict=plugin_dict).plugin, DummyClientPlugin)
         self.assertIsInstance(
-            uctt.new_workload_from_dict(
-                config=config,
-                workload_dict=plugin_dict),
+            environment.add_fixture_from_dict(type=Type.WORKLOAD, plugin_dict=plugin_dict).plugin,
             DummyWorkloadPlugin)
 
         plugins_dict = {
@@ -75,20 +69,23 @@ class ConfigTemplating(unittest.TestCase):
             'two': plugin_dict,
             'three': plugin_dict,
         }
+        provisioners = environment.add_fixtures_from_dict(type=Type.PROVISIONER,
+            plugin_list=plugins_dict)
 
-        provisioners = uctt.new_provisioners_from_dict(
-            config=config, provisioner_list=plugins_dict)
-
-        self.assertIsInstance(provisioners, PluginInstances)
+        self.assertIsInstance(provisioners, Fixtures)
         self.assertEqual(len(provisioners), 3)
 
+        one = provisioners.get_plugin(instance_id='one')
         two = provisioners.get_plugin(instance_id='two')
 
+        self.assertIsInstance(one, DummyProvisionerPlugin)
         self.assertIsInstance(two, DummyProvisionerPlugin)
+        self.assertEqual(provisioners.get_plugin(type=Type.PROVISIONER).instance_id, 'one')
+        self.assertEqual(provisioners.get_plugin(type=Type.PROVISIONER), one)
 
-    def test_3_construct_config(self):
+    def test_2_construct_config(self):
         """ test that we can construct plugins from config """
-        config = self._dummy_config()
+        environment = self._dummy_environment('test_2')
 
         plugin_dict = {
             'plugin_id': UCTT_PLUGIN_ID_DUMMY,
@@ -99,7 +96,7 @@ class ConfigTemplating(unittest.TestCase):
             'three': plugin_dict,
         }
 
-        config.add_source(PLUGIN_ID_SOURCE_DICT, priority=80).set_data({
+        environment.config.add_source(PLUGIN_ID_SOURCE_DICT, priority=80).set_data({
             UCTT_PROVISIONER_CONFIG_PROVISIONERS_LABEL: plugins_dict,
             UCTT_CLIENT_CONFIG_CLIENTS_LABEL: plugins_dict,
             UCTT_WORKLOAD_CONFIG_WORKLOADS_LABEL: plugins_dict,
@@ -110,23 +107,68 @@ class ConfigTemplating(unittest.TestCase):
         })
 
         self.assertIsInstance(
-            uctt.new_provisioner_from_config(
-                config=config),
+            environment.add_fixture_from_config(type=Type.PROVISIONER, label=UCTT_PROVISIONER_CONFIG_PROVISIONER_LABEL).plugin,
             DummyProvisionerPlugin)
         self.assertIsInstance(
-            uctt.new_client_from_config(
-                config=config),
+            environment.add_fixture_from_config(type=Type.CLIENT, label=UCTT_CLIENT_CONFIG_CLIENT_LABEL).plugin,
             DummyClientPlugin)
         self.assertIsInstance(
-            uctt.new_workload_from_config(
-                config=config),
+            environment.add_fixture_from_config(type=Type.WORKLOAD, label=UCTT_WORKLOAD_CONFIG_WORKLOAD_LABEL).plugin,
             DummyWorkloadPlugin)
 
-        provisioners = uctt.new_provisioners_from_config(config=config)
+        provisioners = environment.add_fixtures_from_config(type=Type.PROVISIONER, label=UCTT_PROVISIONER_CONFIG_PROVISIONERS_LABEL)
 
-        self.assertIsInstance(provisioners, PluginInstances)
+        self.assertIsInstance(provisioners, Fixtures)
         self.assertEqual(len(provisioners), 3)
 
         two = provisioners.get_plugin(instance_id='two')
 
         self.assertIsInstance(two, DummyProvisionerPlugin)
+        self.assertEqual(provisioners.get_plugin(type=Type.PROVISIONER).instance_id, 'one')
+
+    def test_3_mixedfixtures_flat(self):
+        """ test building mixed fixtures from one config """
+        environment = self._dummy_environment('test_3')
+        environment.config.add_source(PLUGIN_ID_SOURCE_DICT, instance_id='fixtures', priority=80).set_data({
+            'fixtures': {
+                'prov': {
+                    'type': Type.PROVISIONER.value,
+                    'plugin_id': UCTT_PLUGIN_ID_DUMMY
+                },
+
+                'cl1': {
+                    'type': Type.CLIENT.value,
+                    'plugin_id': UCTT_PLUGIN_ID_DUMMY
+                },
+                'cl2': {
+                    'type': Type.CLIENT.value,
+                    'plugin_id': UCTT_PLUGIN_ID_DUMMY
+                },
+
+                'work1': {
+                    'type': Type.WORKLOAD.value,
+                    'plugin_id': UCTT_PLUGIN_ID_DUMMY,
+                    'priority': environment.plugin_priority() - 10
+                },
+                'work2': {
+                    'type': Type.WORKLOAD.value,
+                    'plugin_id': UCTT_PLUGIN_ID_DUMMY,
+                    'priority': environment.plugin_priority() + 10
+                },
+                'work3': {
+                    'type': Type.WORKLOAD.value,
+                    'plugin_id': UCTT_PLUGIN_ID_DUMMY
+                },
+            },
+        })
+
+        environment.add_fixtures_from_config(label='fixtures')
+
+        cl2 = environment.fixtures.get_plugin(type=Type.CLIENT, instance_id='cl2')
+        self.assertEqual(cl2.instance_id, 'cl2')
+
+        wls = environment.fixtures.get_plugins(type=Type.WORKLOAD)
+
+        self.assertEqual(len(wls), 3)
+        self.assertEqual(wls[0].instance_id, 'work2')
+        self.assertEqual(wls[2].instance_id, 'work1')
