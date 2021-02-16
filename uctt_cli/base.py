@@ -63,7 +63,7 @@ class Base:
                 'plugin_id': plugin_id
             }
 
-        for plugin in self._environment.add_plugins_from_dict(
+        for plugin in self._environment.add_fixtures_from_dict(
                 plugin_list=plugin_list, type=Type.CLI).get_plugins():
             logger.info("loading cli plugin: {}".format(plugin_id))
 

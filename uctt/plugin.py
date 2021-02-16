@@ -46,16 +46,6 @@ class UCTTPlugin():
         self.environment = environment
         self.instance_id = instance_id
 
-
-class UCCTArgumentsPlugin(UCTTPlugin):
-    """ Base class for output plugins that receives arguments """
-
-    def arguments(**kwargs):
-        """ Receive a list of arguments for this client """
-        raise NotImplemented(
-            'arguments() was not implemented for this client plugin')
-
-
 @unique
 class Type(Enum):
     """ Enumerator to match plugin types to plugin labels """

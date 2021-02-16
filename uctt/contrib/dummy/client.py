@@ -10,12 +10,11 @@ from typing import Dict, Any
 from uctt.plugin import Type
 from uctt.environment import Environment
 from uctt.client import ClientBase
-
-from .base import DummyFixtures
+from uctt.fixtures import UCCTFixturesPlugin
 
 logger = logging.getLogger('uctt.contrib.dummy.client')
 
-class DummyClientPlugin(DummyFixtures, ClientBase):
+class DummyClientPlugin(ClientBase, UCCTFixturesPlugin):
     """ Dummy client class
 
     As with all dummies, this is a failsafe plugin, that should never throw any
@@ -48,4 +47,7 @@ class DummyClientPlugin(DummyFixtures, ClientBase):
 
         """
         ClientBase.__init__(self, environment, instance_id)
-        DummyFixtures.__init__(self, environment, fixtures)
+
+        fixtures = environment.add_fixtures_from_dict(plugin_list=fixtures)
+        """ All fixtures added to this dummy plugin. """
+        UCCTFixturesPlugin.__init__(self, fixtures)

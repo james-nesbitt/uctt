@@ -2,7 +2,7 @@ import logging
 
 from configerus.config import Config
 
-from .plugin import UCCTArgumentsPlugin, Type
+from .plugin import UCTTPlugin, Type
 
 logger = logging.getLogger('uctt.workload')
 
@@ -19,6 +19,6 @@ UCTT_WORKLOAD_CONFIG_WORKLOAD_KEY = 'workload'
 """ A centralized configerus key for one workload """
 
 
-class WorkloadBase(UCCTArgumentsPlugin):
+class WorkloadBase(UCTTPlugin):
     """ Base class for workload plugins """
     pass
