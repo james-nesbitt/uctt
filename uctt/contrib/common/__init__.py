@@ -28,9 +28,9 @@ UCTT_PLUGIN_ID_OUTPUT_TEXT = 'text'
 
 @Factory(type=Type.OUTPUT, plugin_id=UCTT_PLUGIN_ID_OUTPUT_TEXT)
 def uctt_plugin_factory_output_text(
-        environment: Environment, instance_id: str = '', data: str = ''):
+        environment: Environment, instance_id: str = '', text: str = ''):
     """ create an output text plugin """
-    return TextOutputPlugin(environment, instance_id, data)
+    return TextOutputPlugin(environment, instance_id, text)
 
 
 """ SetupTools EntryPoint BootStrapping """

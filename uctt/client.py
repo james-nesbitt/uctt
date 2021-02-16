@@ -2,7 +2,7 @@ import logging
 
 from configerus.config import Config
 
-from .plugin import UCCTArgumentsPlugin, Type
+from .plugin import UCTTPlugin, Type
 
 logger = logging.getLogger('uctt.client')
 
@@ -19,6 +19,6 @@ UCTT_CLIENT_CONFIG_CLIENT_KEY = 'client'
 """ A centralized configerus key for one client """
 
 
-class ClientBase(UCCTArgumentsPlugin):
+class ClientBase(UCTTPlugin):
     """ Base class for client plugins """
     pass

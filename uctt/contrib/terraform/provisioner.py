@@ -11,9 +11,10 @@ import subprocess
 from typing import Dict, List, Any
 
 from configerus.loaded import LOADED_KEY_ROOT
-from uctt.output import UCTT_PLUGIN_TYPE_OUTPUT, UCTT_OUTPUT_CONFIG_OUTPUTS_KEY, OutputBase
-from uctt.fixtures import Fixtures
+from uctt.plugin import UCTTPlugin, Type
+from uctt.fixtures import Fixtures, UCCTFixturesPlugin, UCTT_FIXTURES_CONFIG_FIXTURES_LABEL
 from uctt.provisioner import ProvisionerBase
+from uctt.output import OutputBase
 from uctt.contrib.common import UCTT_PLUGIN_ID_OUTPUT_DICT, UCTT_PLUGIN_ID_OUTPUT_TEXT
 
 logger = logging.getLogger('uctt.contrib.provisioner:terraform')
@@ -28,17 +29,13 @@ TERRAFORM_PROVISIONER_CONFIG_VARS_KEY = 'vars'
 """ config key for the terraform vars Dict, which will be written to a file """
 TERRAFORM_PROVISIONER_CONFIG_VARS_PATH_KEY = 'vars_path'
 """ config key for the terraform vars file path, where the plugin will write to """
-TERRAFORM_PROVISIONER_CONFIG_PATH_KEY = LOADED_KEY_ROOT
-""" config key for the terraform plan path """
-TERRAFORM_PROVISIONER_CONFIG_OUTPUTS_KEY = UCTT_OUTPUT_CONFIG_OUTPUTS_KEY
-""" config key for defining how to interpret the terraform outputs """
 TERRAFORM_PROVISIONER_DEFAULT_VARS_FILE = 'mtt_terraform.tfvars.json'
 """ Default vars file if none was specified """
 TERRAFORM_PROVISIONER_DEFAULT_STATE_SUBPATH = 'mtt-state'
 """ Default vars file if none was specified """
 
 
-class TerraformProvisionerPlugin(ProvisionerBase):
+class TerraformProvisionerPlugin(ProvisionerBase, UCCTFixturesPlugin):
     """ Terraform provisioner plugin
 
     Provisioner plugin that allows control of and interaction with a terraform
@@ -77,7 +74,7 @@ class TerraformProvisionerPlugin(ProvisionerBase):
         pieces for executing terraform commands
 
         """
-        super(ProvisionerBase.__init__(self, environment, instance_id)
+        super(ProvisionerBase, self).__init__(environment, instance_id)
 
         logger.info("Preparing Terraform setting")
 
@@ -85,6 +82,13 @@ class TerraformProvisionerPlugin(ProvisionerBase):
         """ configerus load label that should contain all of the config """
         self.terraform_config_base = base
         """ configerus get key that should contain all tf config """
+
+        fixtures = self.environment.add_fixtures_from_config(
+            label=self.terraform_config_label,
+            base=[self.terraform_config_base, UCTT_FIXTURES_CONFIG_FIXTURES_LABEL])
+        """ All fixtures added to this provisioner plugin. """
+        UCCTFixturesPlugin.__init__(self, fixtures)
+
         self.terraform_config = self.environment.config.load(
             self.terraform_config_label)
         """ get a configerus LoadedConfig for the terraform label """
@@ -127,11 +131,11 @@ class TerraformProvisionerPlugin(ProvisionerBase):
             variables=self.vars)
         """ TerraformClient instance """
 
-        # First make a set of output plugins config told us about (may be
-        # empty)
-        self.outputs = self.environment.add_outputs_from_config(
-            label=self.terraform_config_label, base=[
-                self.terraform_config_base, TERRAFORM_PROVISIONER_CONFIG_OUTPUTS_KEY])
+        # if the cluster is already provisioned then we can get outputs from it
+        try:
+            self._get_outputs_from_tf()
+        except Exception:
+            pass
 
     def prepare(self):
         """ run terraform init """
@@ -146,12 +150,14 @@ class TerraformProvisionerPlugin(ProvisionerBase):
     def apply(self):
         """ Create all terraform resources described in the plan """
         logger.info("Running Terraform APPLY")
-        # self.tf.apply()
+        self.tf.apply()
+        self._get_outputs_from_tf()
 
     def destroy(self):
         """ Remove all terraform resources in state """
         logger.info("Running Terraform DESTROY")
         self.tf.destroy()
+        self.fixtures = Fixtures()
 
     def clean(self):
         """ Remove terraform run resources from the plan """
@@ -162,15 +168,7 @@ class TerraformProvisionerPlugin(ProvisionerBase):
 
     """ Cluster Interaction """
 
-    def get_output(self, instance_id: str = '', plugin_id: str = '',
-                   exception_if_missing: bool = True) -> OutputBase:
-        """ retrieve an output from the provisioner """
-        outputs = self.get_outputs()
-        output = outputs.get_plugin(
-            type=UCTT_PLUGIN_TYPE_OUTPUT, plugin_id=plugin_id, instance_id=instance_id)
-        return output
-
-    def get_outputs(self) -> Fixtures:
+    def _get_outputs_from_tf(self) -> Fixtures:
         """ retrieve an output from terraform
 
         For other UCTT plugins we can just load configuration, and creating
@@ -205,35 +203,42 @@ class TerraformProvisionerPlugin(ProvisionerBase):
         # value:Any])
         for output_key, output_struct in self.tf.output().items():
             # we only know how to create 2 kinds of outputs
-            output_sensitive = output_struct['sensitive']
+            output_sensitive = bool(output_struct['sensitive'])
+            """ Whether or not the output contains sensitive data """
             output_type = output_struct['type'][0]
+            """ String output primitive type (usually string|object|number) """
             output_spec = output_struct['type'][1]
+            """ A structured spec for the type """
             output_value = output_struct['value']
+            """ output value """
 
             # see if we already have an output plugin for this name
-            plugin = self.outputs.get_plugin(
-                type=UCTT_PLUGIN_TYPE_OUTPUT,
+            fixture = self.fixtures.get_fixture(
+                type=Type.OUTPUT,
                 instance_id=output_key,
                 exception_if_missing=False)
-            if not plugin:
+            if not fixture:
                 if output_type == 'object':
-                    fixture = self.environment.add_output(
+                    fixture = self.environment.add_fixture(
+                        type=Type.OUTPUT,
                         plugin_id=UCTT_PLUGIN_ID_OUTPUT_DICT,
                         instance_id=output_key,
                         priority=self.environment.plugin_priority(delta=5),
                         arguments={'data':output_value})
                 else:
-                    fixture = self.environment.add_output(
+                    fixture = self.environment.add_fixture(
+                        type=Type.OUTPUT,
                         plugin_id=UCTT_PLUGIN_ID_OUTPUT_TEXT,
                         instance_id=output_key,
                         priority=self.environment.plugin_priority(delta=5),
-                        arguments={'data':output_value})
+                        arguments={'text':str(output_value)})
 
-                self.outputs.add_fixture(fixture)
+                self.fixtures.add_fixture(fixture)
             else:
-                plugin.set_data(output_value)
-
-        return outputs
+                if hasattr(fixture.plugin, 'set_data'):
+                    fixture.plugin.set_data(output_value)
+                elif hasattr(fixture.plugin, 'set_text'):
+                    fixture.plugin.set_text(str(output_value))
 
 
 class TerraformClient:

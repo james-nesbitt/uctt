@@ -12,6 +12,7 @@ from uctt.environment import Environment
 from .info import InfoCliPlugin
 from .environment import EnvironmentCliPlugin
 from .config import ConfigCliPlugin
+from .output import OutputCliPlugin
 from .provisioner import ProvisionerCliPlugin
 
 logger = logging.getLogger('uctt.cli')
@@ -47,6 +48,17 @@ def uctt_plugin_factory_cli_environment(
         environment: Environment, instance_id: str = ''):
     """ create a config cli plugin """
     return EnvironmentCliPlugin(environment, instance_id)
+
+
+UCTT_PLUGIN_ID_CLI_OUTPUT = 'output'
+""" cli plugin_id for the output plugin """
+
+
+@Factory(type=Type.CLI, plugin_id=UCTT_PLUGIN_ID_CLI_OUTPUT)
+def uctt_plugin_factory_output_config(
+        environment: Environment, instance_id: str = ''):
+    """ create a output cli plugin """
+    return OutputCliPlugin(environment, instance_id)
 
 
 UCTT_PLUGIN_ID_CLI_PROVISIONER = 'provisioner'

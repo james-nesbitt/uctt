@@ -17,29 +17,22 @@ from typing import List, Dict, Any
 from configerus.config import Config
 from configerus.loaded import Loaded, LOADED_KEY_ROOT
 
-from .plugin import (Factory, Type, UCTTPlugin, UCTT_PLUGIN_CONFIG_KEY_TYPE,
-                     UCTT_PLUGIN_CONFIG_KEY_PLUGINID, UCTT_PLUGIN_CONFIG_KEY_INSTANCEID,
-                     UCTT_PLUGIN_CONFIG_KEY_ARGUMENTS, UCTT_PLUGIN_CONFIG_KEY_PRIORITY, UCTT_PLUGIN_CONFIG_KEY_CONFIG,
-                     UCTT_PLUGIN_CONFIG_KEY_VALIDATORS)
+from .plugin import (
+    Factory,
+    Type,
+    UCTTPlugin,
+    UCTT_PLUGIN_CONFIG_KEY_TYPE,
+    UCTT_PLUGIN_CONFIG_KEY_PLUGINID,
+    UCTT_PLUGIN_CONFIG_KEY_INSTANCEID,
+    UCTT_PLUGIN_CONFIG_KEY_ARGUMENTS,
+    UCTT_PLUGIN_CONFIG_KEY_PRIORITY,
+    UCTT_PLUGIN_CONFIG_KEY_CONFIG,
+    UCTT_PLUGIN_CONFIG_KEY_VALIDATORS)
+from .fixtures import (
+    Fixtures,
+    Fixture,
+    UCTT_FIXTURES_CONFIG_FIXTURES_LABEL)
 
-from .plugin import Type
-from .fixtures import Fixtures, Fixture
-from .provisioner import (
-    ProvisionerBase,
-    UCTT_PROVISIONER_CONFIG_PROVISIONERS_LABEL,
-    UCTT_PROVISIONER_CONFIG_PROVISIONER_LABEL)
-from .client import (
-    ClientBase,
-    UCTT_CLIENT_CONFIG_CLIENTS_LABEL,
-    UCTT_CLIENT_CONFIG_CLIENT_LABEL)
-from .output import (
-    OutputBase,
-    UCTT_OUTPUT_CONFIG_OUTPUTS_LABEL,
-    UCTT_OUTPUT_CONFIG_OUTPUT_LABEL)
-from .workload import (
-    WorkloadBase,
-    UCTT_WORKLOAD_CONFIG_WORKLOADS_LABEL,
-    UCTT_WORKLOAD_CONFIG_WORKLOAD_LABEL)
 
 import logging
 
@@ -156,7 +149,7 @@ class Environment:
 
         return fixtures
 
-    def add_fixtures_from_config(self, label: str = 'fixtures', base: Any = LOADED_KEY_ROOT, type: Type = None, validator: str = '',
+    def add_fixtures_from_config(self, label: str = UCTT_FIXTURES_CONFIG_FIXTURES_LABEL, base: Any = LOADED_KEY_ROOT, type: Type = None, validator: str = '',
                                 exception_if_missing: bool = False, arguments: Dict[str, Any] = {}) -> Fixtures:
         """ Create plugins from some config
 
@@ -533,18 +526,18 @@ class Environment:
 
 
         # Use the factory to make the .fixtures.Fixture
-        fixture = self.new_fixture(
+        fixture = self.add_fixture(
             type=type,
             plugin_id=plugin_id,
             instance_id=instance_id,
             priority=priority,
-            **arguments)
+            arguments=arguments)
         plugin = fixture.plugin
 
         return fixture
 
-    def new_fixture(self, type: Type, plugin_id: str,
-                    instance_id: str, priority: int, *args, **kwargs) -> Fixture:
+    def add_fixture(self, type: Type, plugin_id: str,
+                    instance_id: str, priority: int, arguments: Dict[str, Any] = {}) -> Fixture:
         """ Create a new plugin from parameters
 
         Parameters:
@@ -584,7 +577,7 @@ class Environment:
 
         """
         fac = Factory(type, plugin_id)
-        plugin = fac.create(self, instance_id, *args, **kwargs)
+        plugin = fac.create(self, instance_id, **arguments)
         fixture = self.fixtures.new_fixture(
             plugin=plugin,
             type=type,

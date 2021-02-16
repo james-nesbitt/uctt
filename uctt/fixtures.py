@@ -6,12 +6,13 @@ A set of plugin instances kept as a managed set, we call these fixtures
 import logging
 from typing import Dict, List, Any
 
-from .plugin import Type
+from .plugin import UCTTPlugin, Type
 
 logger = logging.getLogger('uctt.fixtures')
 
 UCTT_FIXTURES_CONFIG_FIXTURES_LABEL = 'fixtures'
 """ A centralized configerus load labe for multiple provisioners """
+
 
 class Fixture:
     """ A plugin wrapper struct that keep metadata about the plugin in a set """
@@ -327,3 +328,46 @@ class Fixtures:
 def sort_instance_list(list: List[Fixture]):
     """ Order a list of objects with a priority value from highest to lowest """
     return sorted(list, key=lambda i: 1 / i.priority if i.priority else 0)
+
+
+
+class UCCTFixturesPlugin:
+    """ Mixin class for output plugins that receives arguments """
+
+    def __init__(self, fixtures: Fixtures = None):
+        """ A Plugin that holds fixtures
+
+        """
+        if fixtures is None:
+            fixtures = Fixtures()
+        self.fixtures = fixtures
+        """ Hold plugin fixtures, so that a provisioner can add output/clients etc """
+
+    def get_fixtures(self, type: Type = None, instance_id: str = '', plugin_id: str = '', exception_if_missing: bool = True) -> Fixtures:
+        """ retrieve an fixture plugin from the plugin """
+        return self.fixtures.get_fixtures(type=type, plugin_id=plugin_id, instance_id=instance_id)
+
+    def get_fixture(self, type: Type = None, instance_id: str = '', plugin_id: str = '', exception_if_missing: bool = True) -> Fixture:
+        """ retrieve an fixture plugin from the plugin """
+        return self.fixtures.get_fixture(type=type, plugin_id=plugin_id, instance_id=instance_id, exception_if_missing=exception_if_missing)
+
+    def get_plugin(self, type: Type = None, plugin_id: str = '', instance_id: str = '', exception_if_missing: bool = True) -> UCTTPlugin:
+        """ Retrieve one of the passed in fixtures """
+        logger.info("{}:execute: get_plugin({})".format(self.instance_id, type.value))
+        return self.fixtures.get_plugin(type=type, plugin_id=plugin_id, instance_id=instance_id, exception_if_missing=exception_if_missing)
+
+    def get_provisioner(self, plugin_id: str = '', instance_id: str = '', exception_if_missing: bool = True) -> UCTTPlugin:
+        """ Retrieve one of the passed in fixture provisioner """
+        return self.get_plugin(type=Type.PROVISIONER, plugin_id=plugin_id, instance_id=instance_id, exception_if_missing=exception_if_missing)
+
+    def get_output(self, plugin_id: str = '', instance_id: str = '', exception_if_missing: bool = True) -> UCTTPlugin:
+        """ Retrieve one of the passed in fixture outputs """
+        return self.get_plugin(type=Type.OUTPUT, plugin_id=plugin_id, instance_id=instance_id, exception_if_missing=exception_if_missing)
+
+    def get_client(self, plugin_id: str = '', instance_id: str = '', exception_if_missing: bool = True) -> UCTTPlugin:
+        """ Retrieve one of the passed in fixture clients """
+        return self.get_plugin(type=Type.CLIENT, plugin_id=plugin_id, instance_id=instance_id, exception_if_missing=exception_if_missing)
+
+    def get_workload(self, plugin_id: str = '', instance_id: str = '', exception_if_missing: bool = True) -> UCTTPlugin:
+        """ Retrieve one of the passed in fixture workloads """
+        return self.get_plugin(type=Type.WORKLOAD, plugin_id=plugin_id, instance_id=instance_id, exception_if_missing=exception_if_missing)

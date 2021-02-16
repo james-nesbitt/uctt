@@ -9,12 +9,11 @@ import logging
 from uctt.plugin import Type
 from uctt.environment import Environment
 from uctt.workload import WorkloadBase
-
-from .base import DummyFixtures
+from uctt.fixtures import UCCTFixturesPlugin
 
 logger = logging.getLogger('uctt.contrib.dummy.workload')
 
-class DummyWorkloadPlugin(DummyFixtures, WorkloadBase):
+class DummyWorkloadPlugin(WorkloadBase, UCCTFixturesPlugin):
     """ Dummy workload class """
 
     def __init__(self, environment: Environment, instance_id: str, fixtures: Dict[str, Dict[str, Any]] = {}):
@@ -31,4 +30,7 @@ class DummyWorkloadPlugin(DummyFixtures, WorkloadBase):
 
         """
         WorkloadBase.__init__(self, environment, instance_id)
-        DummyFixtures.__init__(self, environment, fixtures)
+
+        fixtures = environment.add_fixtures_from_dict(plugin_list=fixtures)
+        """ All fixtures added to this dummy plugin. """
+        UCCTFixturesPlugin.__init__(self, fixtures)

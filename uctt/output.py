@@ -2,7 +2,7 @@ import logging
 
 from configerus.config import Config
 
-from .plugin import UCCTArgumentsPlugin, Type
+from .plugin import UCTTPlugin, Type
 
 logger = logging.getLogger('uctt.output')
 
@@ -19,7 +19,7 @@ UCTT_OUTPUT_CONFIG_OUTPUT_KEY = 'output'
 """ A centralized configerus key for one output """
 
 
-class OutputBase(UCCTArgumentsPlugin):
+class OutputBase(UCTTPlugin):
     """ Base class for output plugins """
     pass
 

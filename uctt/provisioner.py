@@ -7,8 +7,10 @@ Provisioning
 import logging
 
 from configerus.config import Config
+from configerus.loaded import LOADED_KEY_ROOT
 
 from .plugin import UCTTPlugin, Type
+from .fixtures import Fixtures
 
 logger = logging.getLogger('uctt.provisioner')
 
@@ -55,15 +57,3 @@ class ProvisionerBase(UCTTPlugin):
         """ remove all resources created for the cluster """
         raise NotImplementedError(
             'This provisioner has not yet implemented destroy')
-
-    def get_output(self, plugin_id: str = '', instance_id: str = '',
-                   exception_if_missing: bool = True):
-        """ retrieve an output from the provisioner """
-        raise NotImplementedError(
-            'This provisioner has not yet implemented get_output')
-
-    def get_client(self, plugin_id: str = '', instance_id: str = '',
-                   exception_if_missing: bool = True):
-        """ make a client of the type, and optionally of the index """
-        raise NotImplementedError(
-            'This provisioner has not yet implemented get_client')

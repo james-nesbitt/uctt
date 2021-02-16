@@ -11,7 +11,7 @@ class TextOutputPlugin(OutputBase):
 
     """
 
-    def __init__(self, environment, instance_id, data: str = ''):
+    def __init__(self, environment, instance_id, text: str = ''):
         """ Run the super constructor but also set class properties
 
         Parameters:
@@ -30,7 +30,7 @@ class TextOutputPlugin(OutputBase):
         """
         super(OutputBase, self).__init__(environment, instance_id)
 
-        self.set_text(data)
+        self.set_text(text)
 
     def set_text(self, data: str):
         self.text = data

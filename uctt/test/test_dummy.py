@@ -78,7 +78,7 @@ CONFIG_DATA = {
                                     'plugin_id': 'text',
                                     'arguments': {
                                         # The text output takes a string 'data' constructor argument
-                                        'data': "prov client one output one"
+                                        'text': "prov client one output one"
                                     }
                                 },
                                 # 1.b. Second client output is a dummy dict
@@ -102,7 +102,7 @@ CONFIG_DATA = {
                         'type': Type.OUTPUT.value,
                         'plugin_id': 'text',
                         'arguments': {
-                            'data': "prov dummy output one"
+                            'text': "prov dummy output one"
                         }
                     }
                 }
@@ -122,7 +122,7 @@ CONFIG_DATA = {
                         'plugin_id': 'text',
                         'arguments': {
                             # The text output takes a string 'data' constructor argument
-                            'data': "workload two dummy output one"
+                            'text': "workload two dummy output one"
                         }
                     },
                     'client1': {
