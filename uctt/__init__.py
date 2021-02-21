@@ -36,6 +36,7 @@ FIXED_UCTT_BOOTSTRAPS = [
     "uctt_dummy"
 ]
 DEFAULT_ADDITIONAL_UCTT_BOOTSTRAPS = [
+    "uctt_ansible",
     "uctt_docker",
     "uctt_kubernetes",
     "uctt_terraform"
@@ -81,8 +82,8 @@ def new_environment(name: str = DEFAULT_ENVIRONMENT_NAME, additional_uctt_bootst
         name=name, config=config, additional_uctt_bootstraps=additional_uctt_bootstraps)
 
 
-def new_environment_from_config(config: Config, 
-        name: str = DEFAULT_ENVIRONMENT_NAME, additional_uctt_bootstraps: List[str] = DEFAULT_ADDITIONAL_UCTT_BOOTSTRAPS):
+def new_environment_from_config(config: Config,
+                                name: str = DEFAULT_ENVIRONMENT_NAME, additional_uctt_bootstraps: List[str] = DEFAULT_ADDITIONAL_UCTT_BOOTSTRAPS):
     """ Make a new environment from an existing configerus.Config object
 
     Use a passed configerus Config object to create an environment object,

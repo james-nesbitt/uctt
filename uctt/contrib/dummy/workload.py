@@ -13,10 +13,12 @@ from uctt.fixtures import UCCTFixturesPlugin
 
 logger = logging.getLogger('uctt.contrib.dummy.workload')
 
+
 class DummyWorkloadPlugin(WorkloadBase, UCCTFixturesPlugin):
     """ Dummy workload class """
 
-    def __init__(self, environment: Environment, instance_id: str, fixtures: Dict[str, Dict[str, Any]] = {}):
+    def __init__(self, environment: Environment, instance_id: str,
+                 fixtures: Dict[str, Dict[str, Any]] = {}):
         """ Run the super constructor but also set class properties
 
         Parameters:

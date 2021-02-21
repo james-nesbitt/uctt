@@ -16,7 +16,7 @@ from uctt.environment import Environment
 from .client import KubernetesClientPlugin
 from .workload import KubernetesSpecFilesWorkloadPlugin
 
-UCTT_PLUGIN_ID_KUBERNETES_CLIENT = 'mtt_kubernetes'
+UCTT_PLUGIN_ID_KUBERNETES_CLIENT = 'uctt_kubernetes'
 """ client plugin_id for the mtt dummy plugin """
 
 
@@ -24,10 +24,10 @@ UCTT_PLUGIN_ID_KUBERNETES_CLIENT = 'mtt_kubernetes'
 def uctt_plugin_factory_client_kubernetes(
         environment: Environment, instance_id: str = '', kube_config_file: str = ''):
     """ create an mtt kubernetes client plugin """
-    return KubernetesClientPlugin(environment, instance_id, kube_config)
+    return KubernetesClientPlugin(environment, instance_id, kube_config_file)
 
 
-UCTT_PLUGIN_ID_KUBERNETES_SPEC_WORKLAOD = 'mtt_kubernetes_spec'
+UCTT_PLUGIN_ID_KUBERNETES_SPEC_WORKLAOD = 'uctt_kubernetes_spec'
 """ workload plugin_id for the mtt_kubernetes spec plugin """
 
 

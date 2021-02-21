@@ -29,7 +29,7 @@ TERRAFORM_PROVISIONER_CONFIG_VARS_KEY = 'vars'
 """ config key for the terraform vars Dict, which will be written to a file """
 TERRAFORM_PROVISIONER_CONFIG_VARS_PATH_KEY = 'vars_path'
 """ config key for the terraform vars file path, where the plugin will write to """
-TERRAFORM_PROVISIONER_DEFAULT_VARS_FILE = 'mtt_terraform.tfvars.json'
+TERRAFORM_PROVISIONER_DEFAULT_VARS_FILE = 'uctt_terraform.tfvars.json'
 """ Default vars file if none was specified """
 TERRAFORM_PROVISIONER_DEFAULT_STATE_SUBPATH = 'mtt-state'
 """ Default vars file if none was specified """
@@ -137,10 +137,37 @@ class TerraformProvisionerPlugin(ProvisionerBase, UCCTFixturesPlugin):
         except Exception:
             pass
 
+    def info(self):
+        """ get info about a provisioner plugin """
+        plugin = self
+        client = plugin.tf
+        return {
+            'plugin': {
+                'terraform_config_label': plugin.terraform_config_label,
+                'terraform_config_base': plugin.terraform_config_base
+            },
+            'client': {
+                'vars': client.vars,
+                'working_dir': client.working_dir,
+                'state_path': client.state_path,
+                'vars_path': client.vars_path,
+                'terraform_bin': client.terraform_bin
+            },
+            'helper': {
+                'commands': {
+                    'init': "{bin} -chdir={working_dir} init".format(bin=client.terraform_bin, working_dir=client.working_dir),
+                    'plan': "{bin} -chdir={working_dir} plan -var-file={vars_path} -state={state_path}".format(bin=client.terraform_bin, working_dir=client.working_dir, vars_path=client.vars_path, state_path=client.state_path),
+                    'apply': "{bin} -chdir={working_dir} apply -var-file={vars_path} -state={state_path}".format(bin=client.terraform_bin, working_dir=client.working_dir, vars_path=client.vars_path, state_path=client.state_path),
+                    'destroy': "{bin} -chdir={working_dir} destroy -var-file={vars_path} -state={state_path}".format(bin=client.terraform_bin, working_dir=client.working_dir, vars_path=client.vars_path, state_path=client.state_path),
+                    'output': "{bin} -chdir={working_dir} output -state={state_path}".format(bin=client.terraform_bin, working_dir=client.working_dir, state_path=client.state_path)
+                }
+            }
+        }
+
     def prepare(self):
         """ run terraform init """
         logger.info("Running Terraform INIT")
-        self.tf.init()
+        # self.tf.init()
 
     def check(self):
         """ Check that the terraform plan is valid """
@@ -150,7 +177,7 @@ class TerraformProvisionerPlugin(ProvisionerBase, UCCTFixturesPlugin):
     def apply(self):
         """ Create all terraform resources described in the plan """
         logger.info("Running Terraform APPLY")
-        self.tf.apply()
+        # self.tf.apply()
         self._get_outputs_from_tf()
 
     def destroy(self):
@@ -224,14 +251,14 @@ class TerraformProvisionerPlugin(ProvisionerBase, UCCTFixturesPlugin):
                         plugin_id=UCTT_PLUGIN_ID_OUTPUT_DICT,
                         instance_id=output_key,
                         priority=self.environment.plugin_priority(delta=5),
-                        arguments={'data':output_value})
+                        arguments={'data': output_value})
                 else:
                     fixture = self.environment.add_fixture(
                         type=Type.OUTPUT,
                         plugin_id=UCTT_PLUGIN_ID_OUTPUT_TEXT,
                         instance_id=output_key,
                         priority=self.environment.plugin_priority(delta=5),
-                        arguments={'text':str(output_value)})
+                        arguments={'text': str(output_value)})
 
                 self.fixtures.add_fixture(fixture)
             else:
@@ -306,6 +333,10 @@ class TerraformClient:
                         raise BlockingIOError(
                             "Timed out when waiting for init lock to go away")
             else:
+                os.makedirs(
+                    os.path.dirname(
+                        os.path.abspath(lockfile)),
+                    exist_ok=True)
                 with open(lockfile, 'w') as lockfile_object:
                     lockfile_object.write(
                         "{} is running init".format(str(os.getpid())))
@@ -330,7 +361,8 @@ class TerraformClient:
                 "Terraform client failed to run apply in %s: %s",
                 self.working_dir,
                 e.stderr)
-            raise Exception("Terraform client failed to run apply") from e
+            raise Exception(
+                "Terraform client failed to run : {}".format(e)) from e
 
     def destroy(self):
         """ Apply a terraform plan """

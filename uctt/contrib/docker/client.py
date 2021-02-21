@@ -15,7 +15,7 @@ class DockerClientPlugin(ClientBase, DockerClient):
     """
 
     def __init__(self, environment, instance_id, host: str, cert_path: str, tls_verify: bool = True,
-                 compose_tls_version: str = 'TLSv1_2'):
+                 compose_tls_version: str = 'TLSv1_2', version: str = 'auto'):
         """ Run the super constructor but also set class properties
 
         In order to decorate this existing class as a DockerClient, without using the
@@ -53,5 +53,5 @@ class DockerClientPlugin(ClientBase, DockerClient):
         env['DOCKER_TLS_VERIFY'] = '1' if tls_verify else '0'
         env['COMPOSE_TLS_VERSION'] = compose_tls_version
 
-        throwaway = DockerClient.from_env(environment=env)
+        throwaway = DockerClient.from_env(environment=env, version=version)
         self.api = throwaway.api

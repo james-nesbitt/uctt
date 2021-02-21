@@ -14,6 +14,7 @@ from uctt.fixtures import UCCTFixturesPlugin
 
 logger = logging.getLogger('uctt.contrib.dummy.client')
 
+
 class DummyClientPlugin(ClientBase, UCCTFixturesPlugin):
     """ Dummy client class
 
@@ -28,7 +29,8 @@ class DummyClientPlugin(ClientBase, UCCTFixturesPlugin):
     anything
     """
 
-    def __init__(self, environment: Environment, instance_id: str, fixtures: Dict[str, Dict[str, Any]] = {}):
+    def __init__(self, environment: Environment, instance_id: str,
+                 fixtures: Dict[str, Dict[str, Any]] = {}):
         """ Run the super constructor but also set class properties
 
         Overrides the ClientBase.__init__

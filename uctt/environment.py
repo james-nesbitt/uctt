@@ -72,7 +72,8 @@ class Environment:
 
     """
 
-    def add_fixtures_from_typeconfig(self, label: str, base: Any = LOADED_KEY_ROOT, validator: str = '') -> Fixtures:
+    def add_fixtures_from_typeconfig(
+            self, label: str, base: Any = LOADED_KEY_ROOT, validator: str = '') -> Fixtures:
         """ Create multiple different fixtures from a structured config source
 
         This approach to creating fixtures keeps a tree:
@@ -122,7 +123,8 @@ class Environment:
 
         try:
             plugin_config = self.config.load(label)
-            plugin_type_list = plugin_config.get(base, exception_if_missing=True)
+            plugin_type_list = plugin_config.get(
+                base, exception_if_missing=True)
         except KeyError as e:
             if exception_if_missing:
                 return KeyError(
@@ -150,7 +152,7 @@ class Environment:
         return fixtures
 
     def add_fixtures_from_config(self, label: str = UCTT_FIXTURES_CONFIG_FIXTURES_LABEL, base: Any = LOADED_KEY_ROOT, type: Type = None, validator: str = '',
-                                exception_if_missing: bool = False, arguments: Dict[str, Any] = {}) -> Fixtures:
+                                 exception_if_missing: bool = False, arguments: Dict[str, Any] = {}) -> Fixtures:
         """ Create plugins from some config
 
         This method will interpret some config values as being usable to build a Dict
@@ -227,7 +229,7 @@ class Environment:
         return fixtures
 
     def add_fixtures_from_dict(self, plugin_list: Dict[str, Dict[str, Any]], type: Type = None,
-                              validator: str = '', arguments: Dict[str, Any] = {}) -> Fixtures:
+                               validator: str = '', arguments: Dict[str, Any] = {}) -> Fixtures:
         """ Create a set of plugins from Dict information
 
         The passed dict should be a key=>details map of plugins, which will be turned
@@ -283,7 +285,7 @@ class Environment:
         return fixtures
 
     def add_fixture_from_config(self, label: str, base: Any = LOADED_KEY_ROOT, type: Type = None,
-                               instance_id: str = '', priority: int = -1, validator: str = '', arguments: Dict[str, Any] = {}) -> Fixture:
+                                instance_id: str = '', priority: int = -1, validator: str = '', arguments: Dict[str, Any] = {}) -> Fixture:
         """ Create a plugin from some config
 
         This method will interpret some config values as being usable to build plugin
@@ -350,9 +352,10 @@ class Environment:
         """ loaded configuration for the plugin """
 
         return self.add_fixture_from_loadedconfig(loaded=plugin_loaded, base=base, type=type,
-                                                 instance_id=instance_id, priority=priority, validator=validator, arguments=arguments)
+                                                  instance_id=instance_id, priority=priority, validator=validator, arguments=arguments)
 
-    def add_fixture_from_dict(self, plugin_dict: Dict[str, Any], type: Type = None, instance_id: str = '', validator: str = '', arguments: Dict[str, Any] = {}) -> Fixture:
+    def add_fixture_from_dict(self, plugin_dict: Dict[str, Any], type: Type = None,
+                              instance_id: str = '', validator: str = '', arguments: Dict[str, Any] = {}) -> Fixture:
         """ Create a single plugin from a Dict of information for it
 
         Create a new plugin from a map/dict of settings for the needed parameters.
@@ -403,7 +406,7 @@ class Environment:
             loaded=mock_config_loaded, base=base, type=type, instance_id=instance_id, validator=validator, arguments=arguments)
 
     def add_fixture_from_loadedconfig(self, loaded: Loaded, base: Any = LOADED_KEY_ROOT, type: Type = None,
-                                     instance_id: str = '', priority: int = -1, validator: str = '', arguments: Dict[str, Any] = {}) -> Fixture:
+                                      instance_id: str = '', priority: int = -1, validator: str = '', arguments: Dict[str, Any] = {}) -> Fixture:
         """ Create a plugin from loaded config
 
         This method will interpret some config values as being usable to build plugin.
@@ -477,6 +480,13 @@ class Environment:
             'Construct config plugin [{}][{}]'.format(
                 type, instance_id))
 
+        # it might be expensive to retrieve all this but we do it to catch early
+        # faults in config.
+        plugin_base = loaded.get(base)
+        if plugin_base is None:
+            raise ValueError(
+                "Cannot build plugin as provided config was empty.")
+
         validators = []
         config_validators = loaded.get(
             [base, UCTT_PLUGIN_CONFIG_KEY_VALIDATORS])
@@ -486,10 +496,8 @@ class Environment:
             validators.append(validator)
         if len(validators):
             # Run configerus validation on the config base once per validator
-            plugin_base = loaded.get(base)
             for validator in validators:
                 config_plugin.validate(plugin_base, validate=validator)
-
 
         if type is None:
             type = loaded.get([base, UCTT_PLUGIN_CONFIG_KEY_TYPE])
@@ -503,14 +511,15 @@ class Environment:
         plugin_id = loaded.get([base, UCTT_PLUGIN_CONFIG_KEY_PLUGINID])
         if not plugin_id:
             raise ValueError(
-                "Could not find a plugin_id when trying to create a plugin:[{}] : {}".format(type, loaded.get(base)))
+                "Could not find a plugin_id when trying to create a '{}' plugin from config: {}".format(type, loaded.get(base)))
 
         # if no instance_id was passed, try to load one or just make one up
         if not instance_id:
             instance_id = loaded.get(
                 [base, UCTT_PLUGIN_CONFIG_KEY_INSTANCEID])
             if not instance_id:
-                instance_id = '{}-{}-{}'.format(type.value, plugin_id, ''.join(random.choice(string.ascii_lowercase) for i in range(10)))
+                instance_id = '{}-{}-{}'.format(type.value, plugin_id, ''.join(
+                    random.choice(string.ascii_lowercase) for i in range(10)))
 
         if priority < 0:
             priority = loaded.get([base, UCTT_PLUGIN_CONFIG_KEY_PRIORITY])
@@ -523,7 +532,6 @@ class Environment:
         if config_arguments is not None:
             arguments = arguments.copy()
             arguments.update(config_arguments)
-
 
         # Use the factory to make the .fixtures.Fixture
         fixture = self.add_fixture(

@@ -57,11 +57,13 @@ class ConfigGroup():
         except KeyError as e:
             return "Could not find the config key '{}'".format(key)
 
-    def format(self, data: str, default_label: str = 'you did not specify a default', raw: bool = False):
+    def format(self, data: str,
+               default_label: str = 'you did not specify a default', raw: bool = False):
         """ Format a target string using config templating """
 
         try:
-            value = self.environment.config.format(data=data, default_label=default_label)
+            value = self.environment.config.format(
+                data=data, default_label=default_label)
         except Exception as e:
             return "Error occured in formatting: '{}'".format(e)
 

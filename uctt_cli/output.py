@@ -21,14 +21,18 @@ class OutputCliPlugin(CliBase):
 
 class OutputGroup():
 
-    def __init__(self, environment: Environment, output_list_limit: List[str] = []):
+    def __init__(self, environment: Environment,
+                 output_list_limit: List[str] = []):
         self.environment = environment
         self.output_list_limit = output_list_limit
         """ limits operations to output instance_ids in this list so that this can be subclassed """
 
     def list(self, raw: bool = False):
         """ List all outputs """
-        list = [plugin.instance_id for plugin in self.environment.fixtures.get_plugins(type=Type.OUTPUT) if len(self.output_list_limit)==0 or plugin.instance_id in self.output_list_limit]
+        list = [
+            plugin.instance_id for plugin in self.environment.fixtures.get_plugins(
+                type=Type.OUTPUT) if len(
+                self.output_list_limit) == 0 or plugin.instance_id in self.output_list_limit]
 
         if raw:
             return list
