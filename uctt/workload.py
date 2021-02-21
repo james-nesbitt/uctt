@@ -3,6 +3,7 @@ import logging
 from configerus.config import Config
 
 from .plugin import UCTTPlugin, Type
+from .fixtures import Fixtures
 
 logger = logging.getLogger('uctt.workload')
 
@@ -21,4 +22,29 @@ UCTT_WORKLOAD_CONFIG_WORKLOAD_KEY = 'workload'
 
 class WorkloadBase(UCTTPlugin):
     """ Base class for workload plugins """
-    pass
+
+    def set_fixtures(self, fixtures: Fixtures):
+        """ Allow the workload to pull needed fixtures from a Fixtures object
+
+        Raises:
+        -------
+
+        Can throw a KeyError if it can't find a needed fixture.
+
+        """
+        raise NotImplementedError(
+            "This workload plugin has not implemented set_fixtures()")
+
+    def apply(self):
+        """ Run the workload
+
+        @NOTE Needs a kubernetes client fixture to run.  Use .set_fixtures() first
+
+        """
+        raise NotImplementedError(
+            "This workload plugin has not implemented apply()")
+
+    def destroy(self):
+        """ destroy any created resources """
+        raise NotImplementedError(
+            "This workload plugin has not implemented destroy()")

@@ -65,7 +65,7 @@ class DockerRunWorkloadPlugin(WorkloadBase):
         self.docker_client_fixture = fixtures.get_fixture(
             type=Type.CLIENT, plugin_id='uctt_docker')
 
-    def exec(self):
+    def apply(self):
         """ Run the workload
 
         @NOTE Needs a docker client fixture to run.  Use .set_fixtures() first

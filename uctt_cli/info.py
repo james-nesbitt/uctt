@@ -29,7 +29,7 @@ class InfoCliPlugin(CliBase):
 
         row_format = "{:<25}{:<20}{:<30}\n"
         info += row_format.format('Type', 'Plugin ID', 'Instance ID')
-        for fixture in self.environment.fixtures.get_fixtures():
+        for fixture in self.environment.fixtures.get_fixtures().to_list():
             info += row_format.format(fixture.type.value,
                                       fixture.plugin_id, fixture.instance_id)
 

@@ -21,6 +21,8 @@ logger = logging.getLogger('uctt.contrib.provisioner:terraform')
 
 TERRAFORM_PROVISIONER_CONFIG_LABEL = 'terraform'
 """ config label loading the terraform config """
+TERRAFORM_PROVISIONER_CONFIG_ROOT_PATH_KEY = 'root.path'
+""" config key for a base path that should be used for any relative paths """
 TERRAFORM_PROVISIONER_CONFIG_PLAN_PATH_KEY = 'plan.path'
 """ config key for the terraform plan path """
 TERRAFORM_PROVISIONER_CONFIG_STATE_PATH_KEY = 'state.path'
@@ -93,12 +95,20 @@ class TerraformProvisionerPlugin(ProvisionerBase, UCCTFixturesPlugin):
             self.terraform_config_label)
         """ get a configerus LoadedConfig for the terraform label """
 
+        self.root_path = self.terraform_config.get([self.terraform_config_base, TERRAFORM_PROVISIONER_CONFIG_ROOT_PATH_KEY],
+                                                     exception_if_missing=False)
+        """ all relative paths will have this joined as their base """
+
         self.working_dir = self.terraform_config.get([self.terraform_config_base, TERRAFORM_PROVISIONER_CONFIG_PLAN_PATH_KEY],
                                                      exception_if_missing=False)
         """ all subprocess commands for terraform will be run in this path """
         if not self.working_dir:
             raise ValueError(
                 "Plugin config did not give us a working/plan path: {}".format(self.terraform_config.data))
+        if not os.path.isabs(self.working_dir):
+            if self.root_path:
+                self.working_dir = os.path.join(self.root_path, self.working_dir)
+            self.working_dir = os.path.abspath(self.working_dir)
 
         state_path = self.terraform_config.get([self.terraform_config_base, TERRAFORM_PROVISIONER_CONFIG_STATE_PATH_KEY],
                                                exception_if_missing=False)
@@ -107,6 +117,10 @@ class TerraformProvisionerPlugin(ProvisionerBase, UCCTFixturesPlugin):
             state_path = os.path.join(
                 self.working_dir,
                 TERRAFORM_PROVISIONER_DEFAULT_STATE_SUBPATH)
+        if not os.path.isabs(state_path):
+            if self.root_path:
+                state_path = os.path.join(self.root_path, state_path)
+            state_path = os.path.abspath(state_path)
 
         self.vars = self.terraform_config.get([self.terraform_config_base, TERRAFORM_PROVISIONER_CONFIG_VARS_KEY],
                                               exception_if_missing=False)
@@ -121,13 +135,17 @@ class TerraformProvisionerPlugin(ProvisionerBase, UCCTFixturesPlugin):
             vars_path = os.path.join(
                 self.working_dir,
                 TERRAFORM_PROVISIONER_DEFAULT_VARS_FILE)
+        if not os.path.isabs(vars_path):
+            if self.root_path:
+                vars_path = os.path.join(self.root_path, vars_path)
+            vars_path = os.path.abspath(vars_path)
 
         logger.info("Creating Terraform client")
 
         self.tf = TerraformClient(
-            working_dir=self.working_dir,
-            state_path=state_path,
-            vars_path=vars_path,
+            working_dir=os.path.realpath(self.working_dir),
+            state_path=os.path.realpath(state_path),
+            vars_path=os.path.realpath(vars_path),
             variables=self.vars)
         """ TerraformClient instance """
 
@@ -167,7 +185,7 @@ class TerraformProvisionerPlugin(ProvisionerBase, UCCTFixturesPlugin):
     def prepare(self):
         """ run terraform init """
         logger.info("Running Terraform INIT")
-        # self.tf.init()
+        self.tf.init()
 
     def check(self):
         """ Check that the terraform plan is valid """
@@ -177,7 +195,7 @@ class TerraformProvisionerPlugin(ProvisionerBase, UCCTFixturesPlugin):
     def apply(self):
         """ Create all terraform resources described in the plan """
         logger.info("Running Terraform APPLY")
-        # self.tf.apply()
+        self.tf.apply()
         self._get_outputs_from_tf()
 
     def destroy(self):
@@ -413,6 +431,7 @@ class TerraformClient:
     def _make_vars_file(self):
         """ write the vars file """
         vars_path = self.vars_path
+
         try:
             os.makedirs(
                 os.path.dirname(

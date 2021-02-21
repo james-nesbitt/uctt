@@ -29,7 +29,7 @@ class FixturesGroup():
     def list(self, include_cli_plugins: bool = False):
         """ List all provisioners """
         list = [fixture.instance_id for fixture in self.environment.fixtures.get_fixtures(
-        ) if include_cli_plugins or fixture.type is not Type.CLI]
+        ).to_list() if include_cli_plugins or fixture.type is not Type.CLI]
 
         return json.dumps(list, indent=2)
 
@@ -47,6 +47,6 @@ class FixturesGroup():
             'plugin_id': fixture.plugin_id,
             'instance_id': fixture.instance_id,
             'priority': fixture.priority,
-        } for fixture in self.environment.fixtures.get_fixtures(type=type, plugin_id=plugin_id, instance_id=instance_id) if include_cli_plugins or fixture.type is not Type.CLI]
+        } for fixture in self.environment.fixtures.get_fixtures(type=type, plugin_id=plugin_id, instance_id=instance_id).to_list() if include_cli_plugins or fixture.type is not Type.CLI]
 
         return json.dumps(list, indent=2)

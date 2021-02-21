@@ -16,7 +16,7 @@ class AnsibleCliPlugin(CliBase):
     def fire(self):
         """ return a dict of commands """
         if self.environment.fixtures.get_fixture(
-                type=Type.PROVISIONER, plugin_id='uctt_ansible') is not None:
+                type=Type.PROVISIONER, plugin_id='uctt_ansible', exception_if_missing=False) is not None:
             return {
                 'ansible': AnsibleGroup(self.environment)
             }

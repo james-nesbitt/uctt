@@ -16,7 +16,7 @@ class TerraformCliPlugin(CliBase):
     def fire(self):
         """ return a dict of commands """
         if self.environment.fixtures.get_fixture(
-                type=Type.PROVISIONER, plugin_id='uctt_terraform') is not None:
+                type=Type.PROVISIONER, plugin_id='uctt_terraform', exception_if_missing=False) is not None:
             return {
                 'terraform': TerraformGroup(self.environment)
             }
@@ -87,17 +87,14 @@ class TerraformGroup():
         if not hasattr(provisioner, 'get_fixtures'):
             raise ValueError('This provisioner does not keep fixtures.')
 
-        if type:
-            type = Type.from_string(type)
-        else:
-            type = None
+        type = Type.from_string(type) if type else None
 
         list = [{
             'type': fixture.type.value,
             'plugin_id': fixture.plugin_id,
             'instance_id': fixture.instance_id,
             'priority': fixture.priority,
-        } for fixture in provisioner.get_fixtures(type=type, plugin_id=plugin_id, instance_id=instance_id)]
+        } for fixture in provisioner.get_fixtures(type=type, plugin_id=plugin_id, instance_id=instance_id).to_list()]
 
         return json.dumps(list, indent=2)
 

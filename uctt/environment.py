@@ -206,8 +206,8 @@ class Environment:
             plugin_list = plugin_config.get(base, exception_if_missing=True)
         except KeyError as e:
             if exception_if_missing:
-                return KeyError(
-                    'Could not load any config for plugin generation')
+                raise KeyError(
+                    'Could not load any config for plugin generation') from e
                 # there is not config so we can ignore this
             else:
                 return fixtures

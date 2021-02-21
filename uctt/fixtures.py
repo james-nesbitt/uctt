@@ -194,7 +194,7 @@ class Fixtures:
             return instance.plugin
 
     def get_fixture(self, type: Type = None, plugin_id: str = '',
-                    instance_id: str = '', exception_if_missing: bool = True):
+                    instance_id: str = '', exception_if_missing: bool = True) -> 'Fixture':
         """ retrieve the first matching fixture object based on filters and priority
 
         Parameters:
@@ -260,7 +260,7 @@ class Fixtures:
         return [instance.plugin for instance in instances]
 
     def get_fixtures(self, type: Type = None, plugin_id: str = '',
-                     instance_id: str = '') -> "Fixtures":
+                     instance_id: str = '') -> 'Fixtures':
         """ Retrieve an ordered filtered list of Fixtures
 
         Parameters:
@@ -275,16 +275,14 @@ class Fixtures:
         Returns:
         --------
 
-        A sorted List of Fixture structs that matched the arguments,
+        A List of Fixture structs that matched the arguments,
         possibly empty.
+        If you want a sorted list see .to_list()
 
         """
-        instances = self._filter_instances(
-            type=type, plugin_id=plugin_id, instance_id=instance_id)
         matches = Fixtures()
-        for match in sort_instance_list(instances):
-            matches.add_fixture(match)
-
+        [matches.add_fixture(match) for match in self._filter_instances(
+            type=type, plugin_id=plugin_id, instance_id=instance_id)]
         return matches
 
     def get_filtered(self, type: Type = None,

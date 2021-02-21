@@ -13,6 +13,7 @@ from configerus.loaded import LOADED_KEY_ROOT
 from uctt.plugin import Factory, Type
 from uctt.environment import Environment
 
+from .cli import TerraformCliPlugin
 from .provisioner import TerraformProvisionerPlugin, TERRAFORM_PROVISIONER_CONFIG_LABEL
 
 UCTT_TERRAFORM_PROVISIONER_PLUGIN_ID = 'uctt_terraform'
