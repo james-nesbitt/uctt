@@ -123,8 +123,6 @@ def new_environment_from_config(config: Config,
 
 def environment_names() -> List[str]:
     """ Return a list of all of the created environments """
-    if len(_environments) == 0:
-        raise ValueError("No environments have been configured yet.")
     return list(_environments)
 
 

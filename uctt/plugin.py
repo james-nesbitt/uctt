@@ -92,7 +92,8 @@ class Type(Enum):
 
         """
         if type is None:
-            raise ValueError("Cannot determine type of plugin sa you passed a None value")
+            raise ValueError(
+                "Cannot determine type of plugin sa you passed a None value")
 
         try:
             return Type(type_string)
