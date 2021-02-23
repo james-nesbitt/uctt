@@ -8,15 +8,15 @@ kubernetes clients and kubernetes workloads.
 """
 
 import os
-from typing import List
+from typing import List, Any
 
 from uctt.plugin import Factory, Type
 from uctt.environment import Environment
 
 from .client import KubernetesClientPlugin
-from .workload import KubernetesSpecFilesWorkloadPlugin
+from .deployment_workload import KubernetesDeploymentWorkloadPlugin, KUBERNETES_DEPLOYMENT_WORKLOAD_CONFIG_LABEL, KUBERNETES_DEPLOYMENT_WORKLOAD_CONFIG_BASE
 
-UCTT_PLUGIN_ID_KUBERNETES_CLIENT = 'mtt_kubernetes'
+UCTT_PLUGIN_ID_KUBERNETES_CLIENT = 'uctt_kubernetes'
 """ client plugin_id for the mtt dummy plugin """
 
 
@@ -24,18 +24,20 @@ UCTT_PLUGIN_ID_KUBERNETES_CLIENT = 'mtt_kubernetes'
 def uctt_plugin_factory_client_kubernetes(
         environment: Environment, instance_id: str = '', kube_config_file: str = ''):
     """ create an mtt kubernetes client plugin """
-    return KubernetesClientPlugin(environment, instance_id, kube_config)
+    return KubernetesClientPlugin(environment, instance_id, kube_config_file)
 
 
-UCTT_PLUGIN_ID_KUBERNETES_SPEC_WORKLAOD = 'mtt_kubernetes_spec'
-""" workload plugin_id for the mtt_kubernetes spec plugin """
+UCTT_PLUGIN_ID_KUBERNETES_DEPLOYMENT_WORKLAOD = 'uctt_kubernetes_deployment'
+""" workload plugin_id for the mtt_kubernetes deployment plugin """
 
 
-@Factory(type=Type.WORKLOAD, plugin_id=UCTT_PLUGIN_ID_KUBERNETES_SPEC_WORKLAOD)
-def uctt_plugin_factory_workload_kubernetes_spec(
-        environment: Environment, instance_id: str = '', files: List[str] = []):
+@Factory(type=Type.WORKLOAD,
+         plugin_id=UCTT_PLUGIN_ID_KUBERNETES_DEPLOYMENT_WORKLAOD)
+def uctt_plugin_factory_workload_kubernetes_deployment(
+        environment: Environment, instance_id: str = '', label: str = KUBERNETES_DEPLOYMENT_WORKLOAD_CONFIG_LABEL, base: Any = KUBERNETES_DEPLOYMENT_WORKLOAD_CONFIG_BASE):
     """ create an mtt kubernetes spec workload plugin """
-    return KubernetesSpecFilesWorkloadPlugin(environment, instance_id, files)
+    return KubernetesDeploymentWorkloadPlugin(
+        environment, instance_id, label=label, base=base)
 
 
 """ SetupTools EntryPoint UCTT BootStrapping """

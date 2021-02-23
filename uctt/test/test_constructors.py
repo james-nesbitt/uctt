@@ -43,7 +43,9 @@ class PluginConstruction(unittest.TestCase):
     def _dummy_environment(self, name: str) -> Environment:
         """ Create an environment object, add the common config source data """
         if not name in environment_names():
-            new_environment(name=name, additional_uctt_bootstraps=['uctt_dummy'])
+            new_environment(
+                name=name,
+                additional_uctt_bootstraps=['uctt_dummy'])
 
         return get_environment(name=name)
 
@@ -56,12 +58,14 @@ class PluginConstruction(unittest.TestCase):
         }
 
         self.assertIsInstance(
-            environment.add_fixture_from_dict(type=Type.PROVISIONER, plugin_dict=plugin_dict).plugin,
+            environment.add_fixture_from_dict(
+                type=Type.PROVISIONER, plugin_dict=plugin_dict).plugin,
             DummyProvisionerPlugin)
         self.assertIsInstance(
             environment.add_fixture_from_dict(type=Type.CLIENT, plugin_dict=plugin_dict).plugin, DummyClientPlugin)
         self.assertIsInstance(
-            environment.add_fixture_from_dict(type=Type.WORKLOAD, plugin_dict=plugin_dict).plugin,
+            environment.add_fixture_from_dict(
+                type=Type.WORKLOAD, plugin_dict=plugin_dict).plugin,
             DummyWorkloadPlugin)
 
         plugins_dict = {
@@ -70,7 +74,7 @@ class PluginConstruction(unittest.TestCase):
             'three': plugin_dict,
         }
         provisioners = environment.add_fixtures_from_dict(type=Type.PROVISIONER,
-            plugin_list=plugins_dict)
+                                                          plugin_list=plugins_dict)
 
         self.assertIsInstance(provisioners, Fixtures)
         self.assertEqual(len(provisioners), 3)
@@ -80,7 +84,10 @@ class PluginConstruction(unittest.TestCase):
 
         self.assertIsInstance(one, DummyProvisionerPlugin)
         self.assertIsInstance(two, DummyProvisionerPlugin)
-        self.assertEqual(provisioners.get_plugin(type=Type.PROVISIONER).instance_id, 'one')
+        self.assertEqual(
+            provisioners.get_plugin(
+                type=Type.PROVISIONER).instance_id,
+            'one')
         self.assertEqual(provisioners.get_plugin(type=Type.PROVISIONER), one)
 
     def test_2_construct_config(self):
@@ -107,16 +114,21 @@ class PluginConstruction(unittest.TestCase):
         })
 
         self.assertIsInstance(
-            environment.add_fixture_from_config(type=Type.PROVISIONER, label=UCTT_PROVISIONER_CONFIG_PROVISIONER_LABEL).plugin,
+            environment.add_fixture_from_config(
+                type=Type.PROVISIONER,
+                label=UCTT_PROVISIONER_CONFIG_PROVISIONER_LABEL).plugin,
             DummyProvisionerPlugin)
         self.assertIsInstance(
-            environment.add_fixture_from_config(type=Type.CLIENT, label=UCTT_CLIENT_CONFIG_CLIENT_LABEL).plugin,
+            environment.add_fixture_from_config(
+                type=Type.CLIENT, label=UCTT_CLIENT_CONFIG_CLIENT_LABEL).plugin,
             DummyClientPlugin)
         self.assertIsInstance(
-            environment.add_fixture_from_config(type=Type.WORKLOAD, label=UCTT_WORKLOAD_CONFIG_WORKLOAD_LABEL).plugin,
+            environment.add_fixture_from_config(
+                type=Type.WORKLOAD, label=UCTT_WORKLOAD_CONFIG_WORKLOAD_LABEL).plugin,
             DummyWorkloadPlugin)
 
-        provisioners = environment.add_fixtures_from_config(type=Type.PROVISIONER, label=UCTT_PROVISIONER_CONFIG_PROVISIONERS_LABEL)
+        provisioners = environment.add_fixtures_from_config(
+            type=Type.PROVISIONER, label=UCTT_PROVISIONER_CONFIG_PROVISIONERS_LABEL)
 
         self.assertIsInstance(provisioners, Fixtures)
         self.assertEqual(len(provisioners), 3)
@@ -124,7 +136,10 @@ class PluginConstruction(unittest.TestCase):
         two = provisioners.get_plugin(instance_id='two')
 
         self.assertIsInstance(two, DummyProvisionerPlugin)
-        self.assertEqual(provisioners.get_plugin(type=Type.PROVISIONER).instance_id, 'one')
+        self.assertEqual(
+            provisioners.get_plugin(
+                type=Type.PROVISIONER).instance_id,
+            'one')
 
     def test_3_mixedfixtures_flat(self):
         """ test building mixed fixtures from one config """
@@ -164,7 +179,8 @@ class PluginConstruction(unittest.TestCase):
 
         environment.add_fixtures_from_config(label='fixtures')
 
-        cl2 = environment.fixtures.get_plugin(type=Type.CLIENT, instance_id='cl2')
+        cl2 = environment.fixtures.get_plugin(
+            type=Type.CLIENT, instance_id='cl2')
         self.assertEqual(cl2.instance_id, 'cl2')
 
         wls = environment.fixtures.get_plugins(type=Type.WORKLOAD)

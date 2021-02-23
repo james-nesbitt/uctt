@@ -77,7 +77,8 @@ CONFIG_DATA = {
                                     'type': 'output',
                                     'plugin_id': 'text',
                                     'arguments': {
-                                        # The text output takes a string 'data' constructor argument
+                                        # The text output takes a string 'data'
+                                        # constructor argument
                                         'text': "prov client one output one"
                                     }
                                 },
@@ -86,7 +87,8 @@ CONFIG_DATA = {
                                     'type': 'uctt.plugin.output',
                                     'plugin_id': 'dict',
                                     'arguments': {
-                                        # The dict output takes a dict 'data' constructor argument
+                                        # The dict output takes a dict 'data'
+                                        # constructor argument
                                         'data': {
                                             '1': {
                                                 '1': "prov client one output two data one.one"
@@ -121,7 +123,8 @@ CONFIG_DATA = {
                         'type': 'output',
                         'plugin_id': 'text',
                         'arguments': {
-                            # The text output takes a string 'data' constructor argument
+                            # The text output takes a string 'data' constructor
+                            # argument
                             'text': "workload two dummy output one"
                         }
                     },
@@ -136,6 +139,7 @@ CONFIG_DATA = {
 }
 
 """ TESTS """
+
 
 class ConfigTemplating(unittest.TestCase):
 
@@ -214,7 +218,8 @@ class ConfigTemplating(unittest.TestCase):
         provisioner.prepare()
 
         # check that we can get an output from a provisioner
-        provisioner_output_dummy = provisioner.get_output(instance_id='output1')
+        provisioner_output_dummy = provisioner.get_output(
+            instance_id='output1')
         self.assertEqual(
             provisioner_output_dummy.get_output(),
             "prov dummy output one")

@@ -78,7 +78,6 @@ class Fixtures:
         """
         return self.get_plugin(instance_id=instance_id)
 
-
     def merge_fixtures(self, merge_from: 'Fixtures'):
         """ merge fixture instances from another Fixtures object into this one
 
@@ -129,6 +128,10 @@ class Fixtures:
         self.fixtures.append(fixture)
         return fixture
 
+    def to_list(self):
+        """ retrieve this fixtures as a list """
+        return sort_instance_list(self.fixtures)
+
     def count(self, type: Type = None, plugin_id: str = '',
               instance_id: str = ''):
         """ retrieve the first matching fixture object based on filters and priority
@@ -157,7 +160,7 @@ class Fixtures:
             type=type, plugin_id=plugin_id, instance_id=instance_id))
 
     def get_plugin(self, type: Type = None, plugin_id: str = '',
-                    instance_id: str = '', exception_if_missing: bool = True):
+                   instance_id: str = '', exception_if_missing: bool = True):
         """ retrieve the first matching fixture object based on filters and priority
 
         Parameters:
@@ -181,14 +184,17 @@ class Fixtures:
         KeyError if exception_if_missing is True and no matching fixture was found
 
         """
-        instance = self.get_fixture(type=type, plugin_id=plugin_id, instance_id=instance_id, exception_if_missing=exception_if_missing)
+        instance = self.get_fixture(
+            type=type,
+            plugin_id=plugin_id,
+            instance_id=instance_id,
+            exception_if_missing=exception_if_missing)
 
         if not instance is None:
             return instance.plugin
 
-
     def get_fixture(self, type: Type = None, plugin_id: str = '',
-                instance_id: str = '', exception_if_missing: bool = True):
+                    instance_id: str = '', exception_if_missing: bool = True) -> 'Fixture':
         """ retrieve the first matching fixture object based on filters and priority
 
         Parameters:
@@ -215,16 +221,20 @@ class Fixtures:
         instances = self.get_fixtures(
             type=type,
             plugin_id=plugin_id,
-            instance_id=instance_id)
+            instance_id=instance_id).to_list()
 
         if len(instances):
             return instances[0]
         if exception_if_missing:
-            raise KeyError("Could not find any matching fixture instances.")
+            raise KeyError(
+                "Could not find any matching fixture instances [type:{type}][plugin_id:{plugin_id}][instance_id:{instance_id}]".format(
+                    type=type.value if not type is None else '',
+                    plugin_id=plugin_id,
+                    instance_id=instance_id))
         return None
 
     def get_plugins(self, type: Type = None, plugin_id: str = '',
-                     instance_id: str = '') -> List[object]:
+                    instance_id: str = '') -> List[object]:
         """ retrieve the first matching fixture object based on filters and priority
 
         Parameters:
@@ -246,11 +256,11 @@ class Fixtures:
         instances = self.get_fixtures(
             type=type,
             plugin_id=plugin_id,
-            instance_id=instance_id)
+            instance_id=instance_id).to_list()
         return [instance.plugin for instance in instances]
 
     def get_fixtures(self, type: Type = None, plugin_id: str = '',
-                      instance_id: str = '') -> List[Fixture]:
+                     instance_id: str = '') -> 'Fixtures':
         """ Retrieve an ordered filtered list of Fixtures
 
         Parameters:
@@ -265,14 +275,15 @@ class Fixtures:
         Returns:
         --------
 
-        A sorted List of Fixture structs that matched the arguments,
+        A List of Fixture structs that matched the arguments,
         possibly empty.
+        If you want a sorted list see .to_list()
 
         """
-        instances = self._filter_instances(
-            type=type, plugin_id=plugin_id, instance_id=instance_id)
-        sorted = sort_instance_list(instances)
-        return sorted
+        matches = Fixtures()
+        [matches.add_fixture(match) for match in self._filter_instances(
+            type=type, plugin_id=plugin_id, instance_id=instance_id)]
+        return matches
 
     def get_filtered(self, type: Type = None,
                      plugin_id: str = '', instance_id: str = '') -> 'Fixtures':
@@ -284,7 +295,7 @@ class Fixtures:
         return filtered
 
     def _filter_instances(self, type: Type = None,
-                          plugin_id: str = '', instance_id: str = ''):
+                          plugin_id: str = '', instance_id: str = '') -> List[Fixture]:
         """ Filter the fixture instances down to a List
 
         Parameters:
@@ -325,10 +336,9 @@ class Fixtures:
         return matched_instances
 
 
-def sort_instance_list(list: List[Fixture]):
+def sort_instance_list(list: List[Fixture]) -> List[Fixture]:
     """ Order a list of objects with a priority value from highest to lowest """
     return sorted(list, key=lambda i: 1 / i.priority if i.priority else 0)
-
 
 
 class UCCTFixturesPlugin:
@@ -343,31 +353,48 @@ class UCCTFixturesPlugin:
         self.fixtures = fixtures
         """ Hold plugin fixtures, so that a provisioner can add output/clients etc """
 
-    def get_fixtures(self, type: Type = None, instance_id: str = '', plugin_id: str = '', exception_if_missing: bool = True) -> Fixtures:
+    def get_fixtures(self, type: Type = None, instance_id: str = '',
+                     plugin_id: str = '') -> Fixtures:
         """ retrieve an fixture plugin from the plugin """
-        return self.fixtures.get_fixtures(type=type, plugin_id=plugin_id, instance_id=instance_id)
+        return self.fixtures.get_fixtures(
+            type=type, plugin_id=plugin_id, instance_id=instance_id)
 
-    def get_fixture(self, type: Type = None, instance_id: str = '', plugin_id: str = '', exception_if_missing: bool = True) -> Fixture:
+    def get_fixture(self, type: Type = None, instance_id: str = '',
+                    plugin_id: str = '', exception_if_missing: bool = True) -> Fixture:
         """ retrieve an fixture plugin from the plugin """
-        return self.fixtures.get_fixture(type=type, plugin_id=plugin_id, instance_id=instance_id, exception_if_missing=exception_if_missing)
+        return self.fixtures.get_fixture(
+            type=type, plugin_id=plugin_id, instance_id=instance_id, exception_if_missing=exception_if_missing)
 
-    def get_plugin(self, type: Type = None, plugin_id: str = '', instance_id: str = '', exception_if_missing: bool = True) -> UCTTPlugin:
+    def get_plugin(self, type: Type = None, plugin_id: str = '',
+                   instance_id: str = '', exception_if_missing: bool = True) -> UCTTPlugin:
         """ Retrieve one of the passed in fixtures """
-        logger.info("{}:execute: get_plugin({})".format(self.instance_id, type.value))
-        return self.fixtures.get_plugin(type=type, plugin_id=plugin_id, instance_id=instance_id, exception_if_missing=exception_if_missing)
+        logger.info(
+            "{}:execute: get_plugin({})".format(
+                self.instance_id,
+                type.value))
+        return self.fixtures.get_plugin(
+            type=type, plugin_id=plugin_id, instance_id=instance_id, exception_if_missing=exception_if_missing)
 
-    def get_provisioner(self, plugin_id: str = '', instance_id: str = '', exception_if_missing: bool = True) -> UCTTPlugin:
+    def get_provisioner(self, plugin_id: str = '', instance_id: str = '',
+                        exception_if_missing: bool = True) -> UCTTPlugin:
         """ Retrieve one of the passed in fixture provisioner """
-        return self.get_plugin(type=Type.PROVISIONER, plugin_id=plugin_id, instance_id=instance_id, exception_if_missing=exception_if_missing)
+        return self.get_plugin(type=Type.PROVISIONER, plugin_id=plugin_id,
+                               instance_id=instance_id, exception_if_missing=exception_if_missing)
 
-    def get_output(self, plugin_id: str = '', instance_id: str = '', exception_if_missing: bool = True) -> UCTTPlugin:
+    def get_output(self, plugin_id: str = '', instance_id: str = '',
+                   exception_if_missing: bool = True) -> UCTTPlugin:
         """ Retrieve one of the passed in fixture outputs """
-        return self.get_plugin(type=Type.OUTPUT, plugin_id=plugin_id, instance_id=instance_id, exception_if_missing=exception_if_missing)
+        return self.get_plugin(type=Type.OUTPUT, plugin_id=plugin_id,
+                               instance_id=instance_id, exception_if_missing=exception_if_missing)
 
-    def get_client(self, plugin_id: str = '', instance_id: str = '', exception_if_missing: bool = True) -> UCTTPlugin:
+    def get_client(self, plugin_id: str = '', instance_id: str = '',
+                   exception_if_missing: bool = True) -> UCTTPlugin:
         """ Retrieve one of the passed in fixture clients """
-        return self.get_plugin(type=Type.CLIENT, plugin_id=plugin_id, instance_id=instance_id, exception_if_missing=exception_if_missing)
+        return self.get_plugin(type=Type.CLIENT, plugin_id=plugin_id,
+                               instance_id=instance_id, exception_if_missing=exception_if_missing)
 
-    def get_workload(self, plugin_id: str = '', instance_id: str = '', exception_if_missing: bool = True) -> UCTTPlugin:
+    def get_workload(self, plugin_id: str = '', instance_id: str = '',
+                     exception_if_missing: bool = True) -> UCTTPlugin:
         """ Retrieve one of the passed in fixture workloads """
-        return self.get_plugin(type=Type.WORKLOAD, plugin_id=plugin_id, instance_id=instance_id, exception_if_missing=exception_if_missing)
+        return self.get_plugin(type=Type.WORKLOAD, plugin_id=plugin_id,
+                               instance_id=instance_id, exception_if_missing=exception_if_missing)

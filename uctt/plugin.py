@@ -46,6 +46,7 @@ class UCTTPlugin():
         self.environment = environment
         self.instance_id = instance_id
 
+
 @unique
 class Type(Enum):
     """ Enumerator to match plugin types to plugin labels """
@@ -90,20 +91,24 @@ class Type(Enum):
         KeyError if the passed argument could not be matched.
 
         """
+        if type is None:
+            raise ValueError("Cannot determine type of plugin sa you passed a None value")
+
         try:
             return Type(type_string)
         except ValueError:
             pass
         try:
             return Type[type_string.upper()]
-        except KeyError:
+        except (KeyError, AttributeError):
             pass
         try:
             return Type('uctt.plugin.{}'.format(type_string))
         except ValueError:
             pass
 
-        raise KeyError("Could not identify UCTT plugin type requested '{}'".format(type_string))
+        raise KeyError(
+            "Could not identify UCTT plugin type requested '{}'".format(type_string))
 
 
 class Factory():
@@ -191,7 +196,7 @@ class Factory():
             factory = self.registry[self.type.value][self.plugin_id]
         except KeyError:
             raise NotImplementedError(
-                "MTT Plugin instance '{}:{}' has not been registered.".format(
+                "UCTT Plugin instance '{}:{}' has not been registered.".format(
                     self.type.value, self.plugin_id))
         except Exception as e:
             raise Exception(

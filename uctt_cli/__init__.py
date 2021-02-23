@@ -10,8 +10,9 @@ from uctt.plugin import Type, Factory
 from uctt.environment import Environment
 
 from .info import InfoCliPlugin
-from .environment import EnvironmentCliPlugin
 from .config import ConfigCliPlugin
+from .environment import EnvironmentCliPlugin
+from .fixtures import FixturesCliPlugin
 from .output import OutputCliPlugin
 from .provisioner import ProvisionerCliPlugin
 
@@ -46,8 +47,19 @@ UCTT_PLUGIN_ID_CLI_ENVIRONMENT = 'environment'
 @Factory(type=Type.CLI, plugin_id=UCTT_PLUGIN_ID_CLI_ENVIRONMENT)
 def uctt_plugin_factory_cli_environment(
         environment: Environment, instance_id: str = ''):
-    """ create a config cli plugin """
+    """ create an environment cli plugin """
     return EnvironmentCliPlugin(environment, instance_id)
+
+
+UCTT_PLUGIN_ID_CLI_FIXTURES = 'fixtures'
+""" cli plugin_id for the fixtures plugin """
+
+
+@Factory(type=Type.CLI, plugin_id=UCTT_PLUGIN_ID_CLI_FIXTURES)
+def uctt_plugin_factory_cli_fixtures(
+        environment: Environment, instance_id: str = ''):
+    """ create a fixtures cli plugin """
+    return FixturesCliPlugin(environment, instance_id)
 
 
 UCTT_PLUGIN_ID_CLI_OUTPUT = 'output'
