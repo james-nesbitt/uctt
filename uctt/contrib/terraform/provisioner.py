@@ -96,7 +96,7 @@ class TerraformProvisionerPlugin(ProvisionerBase, UCCTFixturesPlugin):
         """ get a configerus LoadedConfig for the terraform label """
 
         self.root_path = self.terraform_config.get([self.terraform_config_base, TERRAFORM_PROVISIONER_CONFIG_ROOT_PATH_KEY],
-                                                     exception_if_missing=False)
+                                                   exception_if_missing=False)
         """ all relative paths will have this joined as their base """
 
         self.working_dir = self.terraform_config.get([self.terraform_config_base, TERRAFORM_PROVISIONER_CONFIG_PLAN_PATH_KEY],
@@ -107,7 +107,8 @@ class TerraformProvisionerPlugin(ProvisionerBase, UCCTFixturesPlugin):
                 "Plugin config did not give us a working/plan path: {}".format(self.terraform_config.data))
         if not os.path.isabs(self.working_dir):
             if self.root_path:
-                self.working_dir = os.path.join(self.root_path, self.working_dir)
+                self.working_dir = os.path.join(
+                    self.root_path, self.working_dir)
             self.working_dir = os.path.abspath(self.working_dir)
 
         state_path = self.terraform_config.get([self.terraform_config_base, TERRAFORM_PROVISIONER_CONFIG_STATE_PATH_KEY],
