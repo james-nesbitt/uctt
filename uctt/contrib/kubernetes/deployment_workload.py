@@ -121,3 +121,24 @@ class KubernetesDeploymentWorkloadPlugin(WorkloadBase):
             name=name, namespace=namespace, body=body)
 
         return self.status
+
+    def info(self):
+        """ Return dict data about this plugin for introspection """
+        workload_config = self.environment.config.load(self.config_label)
+
+        return {
+            'workload': {
+                'deployment': {
+                    'namespace': workload_config.get(
+                        [self.config_base, KUBERNETES_DEPLOYMENT_WORKLOAD_CONFIG_KEY_NAMESPACE]),
+                    'body': workload_config.get(
+                        [self.config_base, KUBERNETES_DEPLOYMENT_WORKLOAD_CONFIG_KEY_BODY])
+                },
+                'required_fixtures': {
+                    'kubernetes': {
+                        'type': Type.CLIENT.value,
+                        'plugin_id': 'uctt_kubernetes'
+                    }
+                }
+            }
+        }

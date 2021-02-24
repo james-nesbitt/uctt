@@ -6,12 +6,29 @@ A set of plugin instances kept as a managed set, we call these fixtures
 import logging
 from typing import Dict, List, Any
 
-from .plugin import UCTTPlugin, Type
+from .plugin import (UCTTPlugin, Type, UCTT_PLUGIN_CONFIG_KEY_PLUGINID,
+                     UCTT_PLUGIN_CONFIG_KEY_INSTANCEID, UCTT_PLUGIN_CONFIG_KEY_TYPE,
+                     UCTT_PLUGIN_CONFIG_KEY_PRIORITY)
 
 logger = logging.getLogger('uctt.fixtures')
 
 UCTT_FIXTURES_CONFIG_FIXTURES_LABEL = 'fixtures'
-""" A centralized configerus load labe for multiple provisioners """
+""" A centralized configerus load label for multiple fixtures """
+UCTT_FIXTURES_CONFIG_FIXTURE_KEY = 'fixture'
+""" Config .get() key for a single fixture """
+
+UCTT_FIXTURE_VALIDATION_JSONSCHEMA = {
+    'type': 'object',
+    'properties': {
+        UCTT_PLUGIN_CONFIG_KEY_PLUGINID: {'type': 'string'},
+        UCTT_PLUGIN_CONFIG_KEY_INSTANCEID: {'type': 'string'},
+        UCTT_PLUGIN_CONFIG_KEY_TYPE: {'type': 'string'},
+        UCTT_PLUGIN_CONFIG_KEY_PRIORITY: {
+            'type': 'integer', 'minimum': 1, 'maximum': 100}
+    },
+    'required': [UCTT_PLUGIN_CONFIG_KEY_PLUGINID]
+}
+""" json schema validation definition for a plugin """
 
 
 class Fixture:

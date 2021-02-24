@@ -96,3 +96,11 @@ class DictOutputPlugin(OutputBase):
 
         """
         return self.loaded.get(key, validator=validator)
+
+    def info(self):
+        """ Return dict data about this plugin for introspection """
+        return {
+            'output': {
+                'data': self.data
+            }
+        }

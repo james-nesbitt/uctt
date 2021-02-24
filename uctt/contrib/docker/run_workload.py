@@ -82,3 +82,19 @@ class DockerRunWorkloadPlugin(WorkloadBase):
         assert 'image' in run, "Run command had no image"
 
         return client.containers.run(**run)
+
+    def info(self):
+        """ Return dict data about this plugin for introspection """
+        return {
+            'workload': {
+                'run': {
+                    'run': self.loaded_config.get([self.config_base, 'run'])
+                },
+                'required_fixtures': {
+                    'docker': {
+                        'type': Type.CLIENT.value,
+                        'plugin_id': 'uctt_docker'
+                    }
+                }
+            }
+        }

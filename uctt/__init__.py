@@ -32,6 +32,7 @@ FIXED_CONFIGERUS_BOOSTRAPS = [
 ]
 """ configerus bootstraps that we will use on config objects """
 FIXED_UCTT_BOOTSTRAPS = [
+    "uctt_validation",
     "uctt_common",
     "uctt_dummy"
 ]

@@ -52,3 +52,11 @@ class TextOutputPlugin(OutputBase):
 
         """
         return self.text
+
+    def info(self):
+        """ Return dict data about this plugin for introspection """
+        return {
+            'output': {
+                'path': self.path
+            }
+        }

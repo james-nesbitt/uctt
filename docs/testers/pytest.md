@@ -8,50 +8,34 @@ a provisioner fixture that has already started the cluster resources.
 Multiple provisioners can be used if you want to separate resources and run
 tests in parallel.
 
-## Config fixtures
+## Environments
 
-A comprehensive config structure could be:
+At least one environment will be need for your PyTest implementation.
 
-```
-# Import configerus for config generation
-import configerus
-from configerus.contrib.path PLUGIN_ID_SOURCE_PATH
-from configerus.contrib.dict PLUGIN_ID_SOURCE_DICT
+You can create that environment as a pytest fixture, but keep in mind that if
+you want to use the UTCC cli, you will need a `uctt.py` module also knows how
+to build the environment.
+A Common approach is to create your environment in the `uctt.py` module in your
+pytest root, and then import that into your conftest and then retrieve the
+environment using `uctt.environment.get_environment()`.
 
-# Import the uctt core
-import uctt
+The easiest way to get UCTT fixtures into your environment is to have a
+`fixtures.yml` file in a config folder that defines needed fixtures.
 
-import pytest
+## PyTest fixtures
 
-@pytest.fixture(scope='session')
-def config():
-    """
+Typical tests will need access to UCTT fixtures in order to interact with
+test infrastructure.
+As the environment also contains config, tests will often need access to it as
+a pytest fixture.
 
-    Create a config object.
+A good approach is to use pytest fixtures to wrap individual UCTT fixtures
+such as the provisioners or workloads.
 
-    """
+UCTT plugins fit well into pytest fixture scenaris they are either constructed
+ready to use, or can be dynamically configured on the fly.
 
-    # New config
-    config = configerus.new_config()
-    # Add ./config path as a config source
-    config.add_source(PLUGIN_ID_SOURCE_PATH, 'project_config').set_path(os.path.join(__dir__, 'config'))
-
-    return config
-```
-
-This contains a config object which reads from the `./config` folder, as well as
-paths like `~/config/mtt/`.
-It is also configured to interpret config for the `mtt_mirantis` label and load
-more config from `mtt_mirantis/config`
-Some additional dynamic values have been added so that you can inject a username
-and a fixed datetime for consistent datetime labelling.
-
-The real mtt advantage is getting strong control over config, and then letting
-mtt do the rest by relying on that configuration.
-The actual config demands of the plugins may take some learning, but using things
-like the mtt presets should help a lot.
-
-## provisioner fixtures
+### provisioner fixtures
 
 Provisioners are easy to get if you have your config object.
 
@@ -59,19 +43,11 @@ Just use something like:
 
 ```
 @pytest.fixture(scope='session')
-def provisioner(config):
-    """ Retrieve a provisioner object
-
-    we only use one provisioned cluster in this test suite
-    (but we still give it an arbitraty name)
-
-    Use this if your test-cases want unprovisioned resources, but then they
-    need to manage startup and teardown themselves.
-
-    @see provisioner_up
+def provisioner(environment):
+    """ Retrieve a provisioner object ""
 
     """
-    return mtt.new_provisioner_from_config(config, 'my_provisioner')
+    return environment.get_plugin(type=uctt.plugin.Type.OUTPUT, instance_id='my_provisioner')
 ```
 
 This will give a non-provisioned provisioner that you can bring as needed.
@@ -81,7 +57,7 @@ injecting a provisioner that has already provisoned your cluster.
 
 ```
 @pytest.fixture(scope='session')
-def provisioner_up(config, provisioner):
+def provisioner_up(provisioner):
     """ get the provisioner but start the provisioner before returning
 
     This is preferable to the raw provisioner in cases where you want a running
@@ -93,7 +69,6 @@ def provisioner_up(config, provisioner):
     """
     logger.info("Running UCTT provisioner up()")
 
-    conf = config.load("config")
 
     try:
         logger.info("Preparing the testing cluster using the provisioner")
@@ -110,13 +85,25 @@ def provisioner_up(config, provisioner):
 
     yield provisioner
 
-    if conf.get("options.destroy-on-finish", exception_if_missing=False):
-        try:
-            logger.info("Stopping the test cluster using the provisioner as directed by config")
-            provisioner.destroy()
-        except Exception as e:
-            logger.error("Provisioner failed to stop: %s", e)
-            raise e
-    else:
-        logger.info("Leaving test infrastructure in place on shutdown")
+      try:
+          logger.info("Stopping the test cluster using the provisioner as directed by config")
+          provisioner.destroy()
+      except Exception as e:
+          logger.error("Provisioner failed to stop: %s", e)
+          raise e
 ```
+
+Often systems use multiple provisioners.  Such systems can manage the order of
+operations to get a cluster running, or in simpler scenarios there is a `combo`
+provisioner which will group provisioners together into a single interface.
+
+### Clients
+
+Any test can ask for the environment (or a provisioner plugin) for a client plugin
+and use it directly.  Client plugins are quite diverse in behaviour, so their
+use is particular to the need.
+
+### Workloads
+
+Workloads can be use to standardize workloads applied to a cluster.,  They need
+to be given access to clients, and tehn can apply or destroy a workload to a system

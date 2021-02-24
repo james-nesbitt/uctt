@@ -27,26 +27,41 @@ class FixturesGroup():
         self.environment = environment
 
     def list(self, include_cli_plugins: bool = False):
-        """ List all provisioners """
+        """ List all fixture instance_ids """
         list = [fixture.instance_id for fixture in self.environment.fixtures.get_fixtures(
         ).to_list() if include_cli_plugins or fixture.type is not Type.CLI]
 
         return json.dumps(list, indent=2)
 
-    def details(self, type: str = '', plugin_id: str = '',
-                instance_id: str = '', include_cli_plugins: bool = False):
-        """ List all outputs """
+    def info(self, type: str = '', plugin_id: str = '',
+             instance_id: str = '', deep: bool = False, include_cli_plugins: bool = False):
+        """ Info for all fixtures """
 
         if type:
             type = Type.from_string(type)
         else:
             type = None
 
-        list = [{
-            'type': fixture.type.value,
-            'plugin_id': fixture.plugin_id,
-            'instance_id': fixture.instance_id,
-            'priority': fixture.priority,
-        } for fixture in self.environment.fixtures.get_fixtures(type=type, plugin_id=plugin_id, instance_id=instance_id).to_list() if include_cli_plugins or fixture.type is not Type.CLI]
+        list = []
+        for fixture in self.environment.fixtures.get_fixtures(
+                type=type, plugin_id=plugin_id, instance_id=instance_id).to_list():
+            if not include_cli_plugins and fixture.type is Type.CLI:
+                continue
+
+            info = {
+                'fixture': {
+                    'type': fixture.type.value,
+                    'plugin_id': fixture.plugin_id,
+                    'instance_id': fixture.instance_id,
+                    'priority': fixture.priority,
+                }
+            }
+
+            if deep and hasattr(fixture.plugin, 'info'):
+                plugin_info = fixture.plugin.info()
+                if isinstance(plugin_info, dict):
+                    info.update(plugin_info)
+
+            list.append(info)
 
         return json.dumps(list, indent=2)

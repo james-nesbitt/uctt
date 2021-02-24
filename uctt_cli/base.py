@@ -3,7 +3,7 @@ import os
 import importlib.util
 import sys
 
-from uctt import environment_names, get_environment
+from uctt import environment_names, get_environment, new_environment
 from uctt.plugin import Type, Factory
 
 
@@ -40,9 +40,14 @@ class Base:
         # matches a project
         self._project_init()
 
-        if environment == '':
-            environment = environment_names()[0]
-        self._environment = get_environment(environment)
+        try:
+            if environment == '':
+                environment = environment_names()[0]
+                self._environment = get_environment(environment)
+        except (KeyError, IndexError) as e:
+            logger.warn(
+                "No environment object has been defined (making one now.) Are you in a project folder?")
+            self._environment = new_environment()
 
         # collect any comands from all discovered cli plugins
         self._collect_commands()
@@ -59,7 +64,7 @@ class Base:
         plugin_list = {}
         for plugin_id in Factory.registry[Type.CLI.value]:
             plugin_list[plugin_id] = {
-                'type': Type.CLI,
+                'type': Type.CLI.value,
                 'plugin_id': plugin_id
             }
 
@@ -85,6 +90,14 @@ class Base:
                 for (command_name, command) in commands.items():
                     logger.debug(
                         "adding cli plugin command: {}->{}".format(plugin_id, command_name))
+
+                    # if the command name already exists and is a dict then
+                    # maybe we should merge them
+                    if hasattr(self, command_name) and isinstance(
+                            getattr(self, command_name), dict) and isinstance(command, dict):
+                        getattr(self, command_name).update(command)
+                        continue
+
                     setattr(self, command_name, command)
 
     def _project_init(self):
@@ -108,8 +121,7 @@ class Base:
                         "Checking for fixtures in: {}".format(module_path))
 
                     if os.path.isfile(module_path):
-                        # the mock-0.3.1 dir contains testcase.py, testutils.py
-                        # & mock.py
+
                         if path not in sys.path:
                             sys.path.append(path)
 

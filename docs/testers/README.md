@@ -9,12 +9,12 @@ other needed objects.
 
 A typical case workflow itsef:
 
-1. Configure a configerus Config object
-2. use the Config object to create a Provisioner and workload instances
-3. make the Provisioner start any needed resources for testing
-4. use the Workload plugins to apply any load or resources to your cluster
-5. test, ask the provisioner for clients if you need access to the cluster
-6. use the Provisoner to tear down any created resources
+1. Include in your test suite, some python code which creates a new environment
+2. Add some config to your project that tells UCTT what fixtures you want
+3. Use Provisioner clusters to manage your cluster
+4. test, ask the Environment/Provisioners for clients if you need access to the cluster
+5. use the Workloads to apply any load or resources to your cluster
+6. use the Provisoners to tear down any created resources
 
 In general, if you build your config object right, the rest is straight forward
 and not a lot of code.

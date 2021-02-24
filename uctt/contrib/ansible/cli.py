@@ -18,7 +18,9 @@ class AnsibleCliPlugin(CliBase):
         if self.environment.fixtures.get_fixture(
                 type=Type.PROVISIONER, plugin_id='uctt_ansible', exception_if_missing=False) is not None:
             return {
-                'ansible': AnsibleGroup(self.environment)
+                'contrib': {
+                    'ansible': AnsibleGroup(self.environment)
+                }
             }
         else:
             return {}

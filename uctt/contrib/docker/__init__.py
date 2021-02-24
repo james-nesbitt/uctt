@@ -13,7 +13,7 @@ from uctt.plugin import Factory, Type
 from uctt.environment import Environment
 
 from .client import DockerClientPlugin
-from .workload import DockerRunWorkloadPlugin, DOCKER_RUN_WORKLOAD_CONFIG_LABEL, DOCKER_RUN_WORKLOAD_CONFIG_BASE
+from .run_workload import DockerRunWorkloadPlugin, DOCKER_RUN_WORKLOAD_CONFIG_LABEL, DOCKER_RUN_WORKLOAD_CONFIG_BASE
 
 UCTT_PLUGIN_ID_DOCKER_CLIENT = 'uctt_docker'
 """ client plugin_id for the mtt dummy plugin """

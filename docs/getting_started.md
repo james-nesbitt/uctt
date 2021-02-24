@@ -10,78 +10,86 @@ pip install uctt
 
 With UCTT installed, you now need to write an application which imports it.
 
-You are going to want to start by creating a Config object and using that to get
-a provisioner object
+You are going to want to start by creating an environment object
+```
+import uctt
+
+env = uctt.new_environment(name:'MyEnv')
+```
+
+That environment exists globally , and can be retrieved elsewhere using
+`uctt.get_environment(name:'MyEnv')`
+
+If you already have a configurus.config.Config object, it can be used to directly
+create a new environment.
+
+The primary purpose for the environment is to contain a Config object and to
+manage fixtures for the environment.  Fixtures for the environment are expected
+to come from config.
+First you'll need to get some sources of config into the environment
+
+For example, here we add a config source which is a path that can contain files
+and a dict of dynamic information
 
 ```
 # Import configerus for config generation
-import configerus
-from configerus.contrib.path PLUGIN_ID_SOURCE_PATH
 from configerus.contrib.dict PLUGIN_ID_SOURCE_DICT
 
 # Import the uctt core
 import uctt
-# Maybe we'll ask for a docker client later
-import uctt.contrib.docker as uctt_docker
 
-# we will use these as well
-import datetime
-import getpass
+# Make a new environment
+my_env = uctt.new_environment(name:'MyEnv')
 
-# New config
-config = configerus.new_config()
 # Add ./config path as a config source
-config.add_source(PLUGIN_ID_SOURCE_PATH, 'project_config').set_path(os.path.join(__dir__, 'config'))
-# Add some dymanic values for config
-config.add_source(PLUGIN_ID_SOURCE_DICT, 'project_dynamic').set_data({
-    "user": {
-        "id": getpass.getuser() # override user id with a host value
-    },
-    "global": {
-        "datetime": datetime.now(), # use a single datetime across all checks
-    },
-    config.paths_label(): { # special config label for file paths, usually just 'paths'
-        "project": __DIR__  # you can use 'paths:project' in config to substitute this path
-    }
-})
-
-# provisoner from config
-prov = uctt.new_provisioner_from_config(config, 'my_provisioner')
+my_env.config.config.add_source(PLUGIN_ID_SOURCE_PATH).set_path(os.path.join(__dir__, 'config'))
 ```
 
-That code will read a whole bunch of config.
+The easiest way to get fixtures into the environment is to define them in a
+config source such as`./config/fixtures.yml`.
 
-To get a provisioner, you are going to need at least the following config:
+```
+my_provisioner:
+  type: uctt.plugin.provisioner
+  plugin_id: dummy
 
-'provisioner.yml':
+my_client:
+  type: uctt.plugin.client
+  plugin_id: dummy
+
+my_workload:
+  type: uctt.plugin.workload
+  plugin_id: dummy
 ```
-plugin_id: {what backend plugin do you want to use}
+
+Now UCTT can load the fixtures
 ```
-(check what else your particular provisioner expects)
+# fixtures from config
+environment.add_fixtures_from_config(exception_if_missing=True)
+```
+
+Now your environment will have three fixtures; one provisioner, one workload and
+one client, all dummy plugins.
 
 ## What can I do with it
 
 Use it to start up cluster resources
 
 ```
-prov.prepare()
-prov.apply()
+my_prov = my_env.fixtures.get_plugin(instance_id='my_provisioner')
 
-prov.get_client(mtt_docker.UCTT_PLUGIN_ID_DOCKER_CLIENT)
-
-# do some docker stuff
-ps = docker_client.containers.list()
+my_prov.prepare()
+my_prov.apply()
 ```
+
+You can also ask a provisioner for client or output fixtures.  You can create
+workload fixtures and pass them clients from any fixtures set, and tell them
+to start a workload
 
 And lot's more.
 
 Don't forget to tear it all down.
 
 ```
-prov.destroy()
+my_prov.destroy()
 ```
-
-## What more
-
-take a look at the `./demos`.  You can find some examples there of some very
-simple feature elements, and also some full featured testing demos
