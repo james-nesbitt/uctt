@@ -238,7 +238,7 @@ class TerraformProvisionerPlugin(ProvisionerBase, UCCTFixturesPlugin):
                 plugin_info = fixture.plugin.info()
                 if isinstance(plugin_info, dict):
                     info.update(plugin_info)
-                output[fixture.instance_id] = output_info
+                output_info[fixture.instance_id] = output_info
         info['outputs'] = outputs
 
         info['helper'] = {
