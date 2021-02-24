@@ -11,6 +11,9 @@ import subprocess
 from typing import Dict, List, Any
 
 from configerus.loaded import LOADED_KEY_ROOT
+from configerus.contrib.jsonschema.validate import PLUGIN_ID_VALIDATE_JSONSCHEMA_SCHEMA_CONFIG_LABEL
+from configerus.validator import ValidationError
+
 from uctt.plugin import UCTTPlugin, Type
 from uctt.fixtures import Fixtures, UCCTFixturesPlugin, UCTT_FIXTURES_CONFIG_FIXTURES_LABEL
 from uctt.provisioner import ProvisionerBase
@@ -35,6 +38,45 @@ TERRAFORM_PROVISIONER_DEFAULT_VARS_FILE = 'uctt_terraform.tfvars.json'
 """ Default vars file if none was specified """
 TERRAFORM_PROVISIONER_DEFAULT_STATE_SUBPATH = 'mtt-state'
 """ Default vars file if none was specified """
+
+TERRAFORM_VALIDATE_JSONSCHEMA = {
+    'type': 'object',
+    'properties': {
+        'type': {'type': 'string'},
+        'plugin_id': {'type': 'string'},
+
+        'root': {
+            'type': 'object',
+            'properties': {
+                'path': {'type': 'string'}
+            }
+        },
+        'plan': {
+            'type': 'object',
+            'properties': {
+                'path': {'type': 'string'}
+            },
+            'required': ['path']
+        },
+        'state': {
+            'type': 'object',
+            'properties': {
+                'path': {'type': 'string'}
+            }
+        },
+        'vars_path': {
+            'type': 'string'
+        },
+        'vars': {
+            'type': 'object'
+        }
+    }
+}
+""" Validation jsonschema for terraform config contents """
+TERRAFORM_VALIDATE_TARGET = "{}:{}".format(
+    PLUGIN_ID_VALIDATE_JSONSCHEMA_SCHEMA_CONFIG_LABEL,
+    TERRAFORM_PROVISIONER_CONFIG_LABEL)
+""" configerus validation target to matche the above config, which relates to the bootstrap in __init__.py """
 
 
 class TerraformProvisionerPlugin(ProvisionerBase, UCCTFixturesPlugin):
@@ -85,15 +127,24 @@ class TerraformProvisionerPlugin(ProvisionerBase, UCCTFixturesPlugin):
         self.terraform_config_base = base
         """ configerus get key that should contain all tf config """
 
+        self.terraform_config = self.environment.config.load(
+            self.terraform_config_label)
+        """ get a configerus LoadedConfig for the terraform label """
+
+        # Run confgerus validation on the config using our above defined
+        # jsonschema
+        try:
+            self.terraform_config.get(
+                base, validator=TERRAFORM_VALIDATE_TARGET)
+        except ValidationError as e:
+            raise ValueError(
+                "Terraform config failed validation: {}".format(e)) from e
+
         fixtures = self.environment.add_fixtures_from_config(
             label=self.terraform_config_label,
             base=[self.terraform_config_base, UCTT_FIXTURES_CONFIG_FIXTURES_LABEL])
         """ All fixtures added to this provisioner plugin. """
         UCCTFixturesPlugin.__init__(self, fixtures)
-
-        self.terraform_config = self.environment.config.load(
-            self.terraform_config_label)
-        """ get a configerus LoadedConfig for the terraform label """
 
         self.root_path = self.terraform_config.get([self.terraform_config_base, TERRAFORM_PROVISIONER_CONFIG_ROOT_PATH_KEY],
                                                    exception_if_missing=False)
@@ -160,28 +211,47 @@ class TerraformProvisionerPlugin(ProvisionerBase, UCCTFixturesPlugin):
         """ get info about a provisioner plugin """
         plugin = self
         client = plugin.tf
-        return {
-            'plugin': {
-                'terraform_config_label': plugin.terraform_config_label,
-                'terraform_config_base': plugin.terraform_config_base
-            },
-            'client': {
-                'vars': client.vars,
-                'working_dir': client.working_dir,
-                'state_path': client.state_path,
-                'vars_path': client.vars_path,
-                'terraform_bin': client.terraform_bin
-            },
-            'helper': {
-                'commands': {
-                    'init': "{bin} -chdir={working_dir} init".format(bin=client.terraform_bin, working_dir=client.working_dir),
-                    'plan': "{bin} -chdir={working_dir} plan -var-file={vars_path} -state={state_path}".format(bin=client.terraform_bin, working_dir=client.working_dir, vars_path=client.vars_path, state_path=client.state_path),
-                    'apply': "{bin} -chdir={working_dir} apply -var-file={vars_path} -state={state_path}".format(bin=client.terraform_bin, working_dir=client.working_dir, vars_path=client.vars_path, state_path=client.state_path),
-                    'destroy': "{bin} -chdir={working_dir} destroy -var-file={vars_path} -state={state_path}".format(bin=client.terraform_bin, working_dir=client.working_dir, vars_path=client.vars_path, state_path=client.state_path),
-                    'output': "{bin} -chdir={working_dir} output -state={state_path}".format(bin=client.terraform_bin, working_dir=client.working_dir, state_path=client.state_path)
+        info = {}
+        info['plugin'] = {
+            'terraform_config_label': plugin.terraform_config_label,
+            'terraform_config_base': plugin.terraform_config_base
+        },
+        info['client'] = {
+            'vars': client.vars,
+            'working_dir': client.working_dir,
+            'state_path': client.state_path,
+            'vars_path': client.vars_path,
+            'terraform_bin': client.terraform_bin
+        }
+
+        outputs = {}
+        for fixture in self.get_fixtures(type=Type.OUTPUT).to_list():
+            output_info = {
+                'fixture': {
+                    'type': fixture.type.value,
+                    'plugin_id': fixture.plugin_id,
+                    'instance_id': fixture.instance_id,
+                    'priority': fixture.priority,
                 }
             }
+            if hasattr(fixture.plugin, 'info'):
+                plugin_info = fixture.plugin.info()
+                if isinstance(plugin_info, dict):
+                    info.update(plugin_info)
+                output[fixture.instance_id] = output_info
+        info['outputs'] = outputs
+
+        info['helper'] = {
+            'commands': {
+                'init': "{bin} -chdir={working_dir} init".format(bin=client.terraform_bin, working_dir=client.working_dir),
+                'plan': "{bin} -chdir={working_dir} plan -var-file={vars_path} -state={state_path}".format(bin=client.terraform_bin, working_dir=client.working_dir, vars_path=client.vars_path, state_path=client.state_path),
+                'apply': "{bin} -chdir={working_dir} apply -var-file={vars_path} -state={state_path}".format(bin=client.terraform_bin, working_dir=client.working_dir, vars_path=client.vars_path, state_path=client.state_path),
+                'destroy': "{bin} -chdir={working_dir} destroy -var-file={vars_path} -state={state_path}".format(bin=client.terraform_bin, working_dir=client.working_dir, vars_path=client.vars_path, state_path=client.state_path),
+                'output': "{bin} -chdir={working_dir} output -state={state_path}".format(bin=client.terraform_bin, working_dir=client.working_dir, state_path=client.state_path)
+            }
         }
+
+        return info
 
     def prepare(self):
         """ run terraform init """

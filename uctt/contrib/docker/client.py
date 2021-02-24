@@ -47,11 +47,27 @@ class DockerClientPlugin(ClientBase, DockerClient):
         logger.debug(
             "Configuring docker client with args for host:{}".format(host))
 
+        self.host = host
+        self.cert_path = cert_path
+        self.tls_verify = '1' if tls_verify else '0'
+        self.compose_tls_version = compose_tls_version
+
         env = os.environ.copy()
-        env['DOCKER_HOST'] = host
-        env['DOCKER_CERT_PATH'] = cert_path
-        env['DOCKER_TLS_VERIFY'] = '1' if tls_verify else '0'
-        env['COMPOSE_TLS_VERSION'] = compose_tls_version
+        env['DOCKER_HOST'] = self.host
+        env['DOCKER_CERT_PATH'] = self.cert_path
+        env['DOCKER_TLS_VERIFY'] = self.tls_verify
+        env['COMPOSE_TLS_VERSION'] = self.compose_tls_version
 
         throwaway = DockerClient.from_env(environment=env, version=version)
         self.api = throwaway.api
+
+    def info(self):
+        """ Return dict data about this plugin for introspection """
+        return {
+            'docker': {
+                'host': self.host,
+                'cert_path': self.cert_path,
+                'tls_verify': self.tls_verify,
+                'compose_tls_version': self.compose_tls_version
+            }
+        }

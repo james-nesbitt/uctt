@@ -16,6 +16,7 @@ from typing import List, Dict, Any
 
 from configerus.config import Config
 from configerus.loaded import Loaded, LOADED_KEY_ROOT
+from configerus.validator import ValidationError
 
 from .plugin import (
     Factory,
@@ -31,6 +32,7 @@ from .plugin import (
 from .fixtures import (
     Fixtures,
     Fixture,
+    UCTT_FIXTURES_CONFIG_FIXTURE_KEY,
     UCTT_FIXTURES_CONFIG_FIXTURES_LABEL)
 
 
@@ -40,6 +42,8 @@ logger = logging.getLogger('uctt.environment')
 
 DEFAULT_PLUGIN_PRIORITY = 70
 """ Default plugin priority when turned into a fixture """
+
+FIXTURE_VALIDATION_TARGET_FORMAT_STRING = 'jsonschema:{key}'
 
 
 class Environment:
@@ -487,7 +491,9 @@ class Environment:
             raise ValueError(
                 "Cannot build plugin as provided config was empty.")
 
-        validators = []
+        validators = [
+            FIXTURE_VALIDATION_TARGET_FORMAT_STRING.format(
+                key=UCTT_FIXTURES_CONFIG_FIXTURE_KEY)]
         config_validators = loaded.get(
             [base, UCTT_PLUGIN_CONFIG_KEY_VALIDATORS])
         if config_validators:
@@ -496,8 +502,11 @@ class Environment:
             validators.append(validator)
         if len(validators):
             # Run configerus validation on the config base once per validator
-            for validator in validators:
-                config_plugin.validate(plugin_base, validate=validator)
+            try:
+                for validator in validators:
+                    loaded.validate(plugin_base, validate_target=validator)
+            except ValidationError as e:
+                raise e
 
         if type is None:
             type = loaded.get([base, UCTT_PLUGIN_CONFIG_KEY_TYPE])

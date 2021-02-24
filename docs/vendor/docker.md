@@ -20,11 +20,12 @@ give you the plugin alread configured to be used.
 ```
 logger = logging.getLogger("test_clients")
 
-def test_docker_client(provisioner_up):
-    """ did we get a good docker client ? """
+def test_docker_client(environment):
+    """ did we get a good docker client ?"""
 
     logger.info("Getting docker client")
-    docker_client =  provisioner_up.get_client("mtt_docker")
+    docker_client = environment.get_plugin(type:uctt.plugin.Type.CLIENT,
+        plugin_id="uctt_docker")
 
     ps = docker_client.containers.list()
 

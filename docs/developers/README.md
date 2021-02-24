@@ -26,10 +26,49 @@ and use it for anything, if you don't like the constraints put in place.
 
 Plugins that meet requirements for usage but don't actually do anything.
 
+These are usefull for stubbing out components that are not yet delivered, or for
+diagnosing misbehaving components, but using dummy plugins to mock out coupling.
+The dummy plugins typicaly work by being told how to behave, which means being
+told what ind of fixtures to return.
+
 ## Writing a plugin
 
-@TODO
+You will need to:
+
+1. write a plugin class, based around receiving an environment object, an
+   instance_id, and other (preferably optional) constructor requirements needed
+   to operated.
+
+2. write an easy to import factory method for your plugin, and decorate it with
+   the UCTT plugin Factory decorator, telling the Factory what type of plugin
+   and give a plugin_id identity.
+   Anyone who wants to use your plugin will need to import the module with the
+   decorated factory method.
+
+You can optionally:
+
+1. use the ennvironment config object as needed.
+
+2. discover other fixtures in the environment using the environment object.
+
+### Best Practices
+
+1. Use a configerus label and base key for configuration if you will rely on
+  config sources in order to parametrize the plugin.  This allows you to define
+  your plugin configration requirements but allows configuration assignment at
+  run-time. The config label and key can be you constructor arguments, and can
+  default to safe values.
 
 ## Injecting my plugin into my code.
 
-@TODO
+### making sure that you plugin is available
+
+All that is needed for someone to use your plugin is that the plugin decorator
+is executed.
+You can do this by manually importing the  python package.
+
+You can also write a UCTT bootstrap setuptools entrypoint which imports the
+decorated function, and then include that entrypoint name in the environment
+bootstrap list.
+
+The bootstrappers can modify environments when they are created and more.

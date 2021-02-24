@@ -26,7 +26,8 @@ def test_kubectl_client(provisioner_up):
     """ test if we got a good kubectl client? """
 
     logger.info("Getting K8s client")
-    kubectl_client = provisioner_up.get_client("mtt_kubernetes")
+    kubectl_client = environment.get_plugin(type=uctt.plugin.Type.CLIENT,
+        plugin_id="uctt_kubernetes")
 
     coreV1 = kubectl_client.get_CoreV1Api_client()
     ns = coreV1.read_namespace(name="kube-system")

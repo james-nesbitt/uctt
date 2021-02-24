@@ -82,9 +82,19 @@ class KubernetesClientPlugin(ClientBase):
         self.api_client = kubernetes.config.new_client_from_config(
             config_file=kube_config_file)
 
+        self.config_file = kube_config_file
+
     def get_CoreV1Api_client(self):
         """ Get a CoreV1Api client """
         assert self.api_client, "You must run the arguments() method before using this client"
 
         logger.debug("Retrieving kubernetes CoreV1Api client from api_client")
         return kubernetes.client.CoreV1Api(self.api_client)
+
+    def info(self):
+        """ Return dict data about this plugin for introspection """
+        return {
+            'kubernetes': {
+                'config_file': self.config_file
+            }
+        }

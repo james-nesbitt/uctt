@@ -18,18 +18,7 @@ know how to interact with them
 
 Clients are UCTTPlugins, which means that they are constructed by the plugin
 manager.
-Each client has access to a Config object, and an optional instance_id.  No
-rules are applied to instance_ids.
-
-Client plugins are configured using an `.args( ... )` method, which gives them
-any configuration that they can't pull in themselves.
-
-From that point on, the rest depends on the plugin class itself.
+Each client has access to an environment object, and an optional instance_id.  
+No rules are applied to instance_ids.
 
 If you ask for a client, you should know what to do with it.
-
-## Usage
-
-You can try to build a plugin directly by asking uctt.plugin for the plugin
-instance, but typically you will ask a provisioner for a plugin, as the
-provisioner will know how to create a client with access it needs.

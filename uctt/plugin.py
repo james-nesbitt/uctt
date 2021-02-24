@@ -12,6 +12,8 @@ from enum import Enum, unique
 
 logger = logging.getLogger('uctt.plugin')
 
+UCTT_PLUGIN_CONFIG_KEY_PLUGIN = 'plugin'
+""" configerus .get() key for a single plugin """
 UCTT_PLUGIN_CONFIG_KEY_PLUGINID = 'plugin_id'
 """ configerus .get() key for plugin_id """
 UCTT_PLUGIN_CONFIG_KEY_INSTANCEID = 'instance_id'
@@ -20,13 +22,18 @@ UCTT_PLUGIN_CONFIG_KEY_TYPE = 'type'
 """ configerus .get() key for plugin type """
 UCTT_PLUGIN_CONFIG_KEY_ARGUMENTS = 'arguments'
 """ configerus .get() key for plugin arguments """
-
 UCTT_PLUGIN_CONFIG_KEY_PRIORITY = 'priority'
 """ will use this Dict key assign an instance a priority when it is created. """
 UCTT_PLUGIN_CONFIG_KEY_CONFIG = 'config'
 """ will use this Dict key as additional config """
 UCTT_PLUGIN_CONFIG_KEY_VALIDATORS = 'validators'
 """ will use this Dict key from the output config to decide what validators to apply to the plugin """
+
+
+UCTT_PLUGIN_VALIDATION_JSONSCHEMA = {
+    UCTT_PLUGIN_CONFIG_KEY_INSTANCEID: {'type': 'string'}
+}
+""" json schema validation definition for a plugin """
 
 
 class UCTTPlugin():

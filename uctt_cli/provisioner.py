@@ -50,36 +50,24 @@ class ProvisionerGroup():
         """ get info about a provisioner plugin """
         fixture = self._select_provisioner(instance_id=provisioner)
 
-        provisioner_info = {
+        info = {
             'fixture': {
                 'type': fixture.type.value,
                 'plugin_id': fixture.plugin_id,
-                'instance_id': fixture.instance_id
+                'instance_id': fixture.instance_id,
+                'priority': fixture.priority,
             }
         }
 
         if hasattr(fixture.plugin, 'info'):
-            provisioner_info.update(fixture.plugin.info())
+            plugin_info = fixture.plugin.info()
+            if isinstance(plugin_info, dict):
+                info.update(plugin_info)
 
-        return json.dumps(provisioner_info, indent=2)
-
-    def output(self, output: str, provisioner: str = ''):
-        """ Interact with provisioner outputs """
-        provisioner = self._select_provisioner(instance_id=provisioner).plugin
-        if not hasattr(provisioner, 'get_output'):
-            raise ValueError('This provisioner does not keep outputs.')
-
-        plugin = provisioner.get_output(instance_id=output)
-
-        if not hasattr(plugin, 'get_output'):
-            raise ValueError(
-                "Found output '{}' but is cannot be exported in the cli.".format(
-                    plugin.instance_id))
-
-        json.dumps(plugin.get_output(), indent=2)
+        return json.dumps(info, indent=2)
 
     def fixtures(self, provisioner: str = ''):
-        """ List all outputs """
+        """ List all fixtures for this provisioner """
         provisioner = self._select_provisioner(instance_id=provisioner).plugin
         if not hasattr(provisioner, 'get_fixtures'):
             raise ValueError('This provisioner does not keep fixtures.')
