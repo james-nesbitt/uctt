@@ -101,6 +101,6 @@ class DictOutputPlugin(OutputBase):
         """ Return dict data about this plugin for introspection """
         return {
             'output': {
-                'data': self.loaded
+                'data': self.loaded.data
             }
         }

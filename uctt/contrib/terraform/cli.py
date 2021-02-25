@@ -59,7 +59,7 @@ class TerraformGroup():
             if isinstance(plugin_info, dict):
                 info.update(plugin_info)
 
-        return json.dumps(info, indent=2)
+        return json.dumps(info, indent=2, default=lambda X: "{}".format(X))
 
     def fixtures(self, provisioner: str = ''):
         """ List all fixtures for this provisioner """
