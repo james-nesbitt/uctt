@@ -57,6 +57,6 @@ class TextOutputPlugin(OutputBase):
         """ Return dict data about this plugin for introspection """
         return {
             'output': {
-                'path': self.path
+                'text': self.text
             }
         }

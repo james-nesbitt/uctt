@@ -211,6 +211,7 @@ class TerraformProvisionerPlugin(ProvisionerBase, UCCTFixturesPlugin):
         """ get info about a provisioner plugin """
         plugin = self
         client = plugin.tf
+
         info = {}
         info['plugin'] = {
             'terraform_config_label': plugin.terraform_config_label,
@@ -224,9 +225,9 @@ class TerraformProvisionerPlugin(ProvisionerBase, UCCTFixturesPlugin):
             'terraform_bin': client.terraform_bin
         }
 
-        outputs = {}
-        for fixture in self.get_fixtures(type=Type.OUTPUT).to_list():
-            output_info = {
+        fixtures = {}
+        for fixture in self.get_fixtures().to_list():
+            fixture_info = {
                 'fixture': {
                     'type': fixture.type.value,
                     'plugin_id': fixture.plugin_id,
@@ -237,9 +238,9 @@ class TerraformProvisionerPlugin(ProvisionerBase, UCCTFixturesPlugin):
             if hasattr(fixture.plugin, 'info'):
                 plugin_info = fixture.plugin.info()
                 if isinstance(plugin_info, dict):
-                    info.update(plugin_info)
-                output_info[fixture.instance_id] = output_info
-        info['outputs'] = outputs
+                    fixture_info.update(plugin_info)
+            fixtures[fixture.instance_id] = plugin_info
+        info['fixtures'] = fixtures
 
         info['helper'] = {
             'commands': {
